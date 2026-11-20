@@ -2,6 +2,10 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.1.5] · 2026-11-20
+### Añadido
+- Al instalar, el tutorial se abre solo. Si sales de él puedes usar la app, pero un aviso amarillo «Termina el tutorial de instalación» permanece hasta completarlo.
+
 ## [5.1.4] · 2026-11-20
 ### Añadido
 - El tutorial pide primero «Permitir ajustes restringidos» (Android 13+), necesario para poder fijar Acta como app de teléfono cuando se instala fuera de la tienda.

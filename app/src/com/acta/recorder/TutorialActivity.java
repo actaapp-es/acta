@@ -74,6 +74,12 @@ public class TutorialActivity extends Activity {
         return NativeAdbManager.savedPort(c) == 0;
     }
 
+    /** El tutorial de instalación está terminado (o la app ya venía configurada de antes). */
+    static boolean done(Context c) {
+        return Util.prefs(c).getBoolean("tut_done", false) || Util.fullLine(c) || Util.shizukuEnabled(c)
+                || NativeAdbManager.savedPort(c) != 0;
+    }
+
     static void markShown(Context c) {
         Util.prefs(c).edit().putBoolean("tut_shown", true).apply();
     }
@@ -428,6 +434,7 @@ public class TutorialActivity extends Activity {
             count.setText((idx + 1) + " / " + o.length);
         }
 
+        if (step == 8) Util.prefs(this).edit().putBoolean("tut_done", true).apply();
         switch (step) {
             case 0: stepWelcome(); break;
             case 1: stepDialer(); break;

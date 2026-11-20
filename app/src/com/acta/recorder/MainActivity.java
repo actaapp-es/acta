@@ -146,6 +146,8 @@ public class MainActivity extends Activity {
 
         showTab(b != null ? b.getInt("tab", TAB_KEYPAD) : TAB_KEYPAD);
         if (b == null) handleIntent(getIntent());
+        // Recién instalada: el tutorial se abre solo hasta que se termina.
+        if (b == null && !TutorialActivity.done(this)) startActivity(new Intent(this, TutorialActivity.class));
     }
 
     @Override
@@ -294,6 +296,14 @@ public class MainActivity extends Activity {
         String title = null, detail = null, act = null;
         boolean warn = true;
         View.OnClickListener click = null;
+        if (!TutorialActivity.done(this)) {
+            title = "Termina el tutorial de instalación";
+            detail = "Sin él Acta no podrá grabar las llamadas.";
+            act = "Continuar";
+            click = new View.OnClickListener() {
+                @Override public void onClick(View v) { startActivity(new Intent(MainActivity.this, TutorialActivity.class)); }
+            };
+        } else
         if (!Util.isDefaultDialer(this)) {
             title = "Acta no es la app de teléfono";
             detail = "Hace falta para grabar las llamadas.";
