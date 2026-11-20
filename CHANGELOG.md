@@ -2,6 +2,10 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.1.4] · 2026-11-20
+### Añadido
+- El tutorial pide primero «Permitir ajustes restringidos» (Android 13+), necesario para poder fijar Acta como app de teléfono cuando se instala fuera de la tienda.
+
 ## [5.1.3] · 2026-11-20
 ### Corregido
 - El botón «Establecer» de app de teléfono predeterminada del tutorial y del aviso inicial: si Android no muestra el diálogo (p. ej. tras rechazarlo), abre los ajustes de apps predeterminadas.

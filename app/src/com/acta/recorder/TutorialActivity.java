@@ -228,6 +228,7 @@ public class TutorialActivity extends Activity {
 
     @Override
     protected void onActivityResult(int rc, int res, Intent data) {
+        if (rc == 4) Util.prefs(this).edit().putBoolean("tut_restricted", true).apply();
         if (rc == 1 && res != RESULT_OK && !Util.isDefaultDialer(this)) Util.dialerSettings(this);
         detect(); render();
     }
@@ -544,14 +545,32 @@ public class TutorialActivity extends Activity {
         para("Acta tiene que ser tu app de teléfono para poder grabar. Pulsa cada botón y acepta.", 15.5f, 10);
         LinearLayout card = cardBox(22);
         card.setPadding(0, 0, 0, 0);
-        card.addView(checkRow("App de teléfono predeterminada", "Para grabar cada llamada", dDialer, "Establecer",
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            final boolean rdone = Util.prefs(this).getBoolean("tut_restricted", false) || dDialer;
+            card.addView(checkRow("1 · Permitir ajustes restringidos", "Al instalar desde fuera de la tienda, Android bloquea el permiso de app de teléfono hasta que lo permitas", rdone, "Abrir",
+                    new View.OnClickListener() {
+                        @Override public void onClick(View v) {
+                            try {
+                                startActivityForResult(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        android.net.Uri.parse("package:" + getPackageName())), 4);
+                            } catch (Throwable e) { }
+                        }
+                    }));
+            if (!rdone) {
+                TextView how = Ui.text(this, R.style.Text_Meta, "En «Información de la app» pulsa ⋮ (arriba a la derecha) › «Permitir ajustes restringidos» y confirma con tu huella o PIN. Al volver, sigue con el paso 2. Si no ves ese menú, pulsa antes «Establecer» una vez y vuelve a probar.");
+                how.setPadding(dp(18), 0, dp(18), dp(14));
+                card.addView(how);
+            }
+            card.addView(Ui.separator(this, 18));
+        }
+        card.addView(checkRow((android.os.Build.VERSION.SDK_INT >= 33 ? "2 · " : "") + "App de teléfono predeterminada", "Para grabar cada llamada", dDialer, "Establecer",
                 new View.OnClickListener() {
                     @Override public void onClick(View v) {
                         Util.askDialer(TutorialActivity.this, 1);
                     }
                 }));
         card.addView(Ui.separator(this, 18));
-        card.addView(checkRow("Permisos", "Teléfono, contactos, micrófono y avisos", dPerms, "Permitir",
+        card.addView(checkRow((android.os.Build.VERSION.SDK_INT >= 33 ? "3 · " : "") + "Permisos", "Teléfono, contactos, micrófono y avisos", dPerms, "Permitir",
                 new View.OnClickListener() {
                     @Override public void onClick(View v) { Util.askPermissions(TutorialActivity.this, 2); }
                 }));
