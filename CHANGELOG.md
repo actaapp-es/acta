@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.1.2] · 2026-11-20
+### Corregido
+- La app se cerraba al abrirla si no se había concedido el permiso de contactos. Ahora se abre siempre y ofrece conceder los permisos desde el aviso superior.
+
+### Añadido
+- Pantalla de error: si la app falla, muestra el motivo exacto y permite copiarlo para el aviso de errores. El texto no sale del teléfono.
+
 ## [5.1] · 2026-11-20
 ### Añadido
 - Proyecto de código abierto (GPL-3.0-or-later), publicado en GitHub con compilación y versiones automáticas.

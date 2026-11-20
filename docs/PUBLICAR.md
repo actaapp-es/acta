@@ -25,7 +25,7 @@ git init -b main
 git config user.name "tu-alias"
 git config user.email "NUMERO+tu-alias@users.noreply.github.com"
 git add .
-git commit -m "Acta 5.1"
+git commit -m "Acta 5.1.2"
 git remote add origin https://github.com/TU-USUARIO/acta.git
 git push -u origin main
 ```
@@ -50,10 +50,10 @@ Guarda el `.p12` y la contraseña en un gestor de contraseñas **fuera del repos
 
 ## 5 · Publicar una versión
 ```bash
-git tag v5.1
-git push origin v5.1
+git tag v5.1.2
+git push origin v5.1.2
 ```
-La Action compila el APK y Acta Conexión, y crea la *Release* con `Acta.apk`, `ActaConexion-Windows.zip` y `SHA256SUMS.txt`. (La etiqueta debe coincidir con `versionName` del manifiesto: `v5.1` ↔ `5.1`.)
+La Action compila el APK y Acta Conexión, y crea la *Release* con `Acta.apk`, `ActaConexion-Windows.zip` y `SHA256SUMS.txt`. (La etiqueta debe coincidir con `versionName` del manifiesto: `v5.1.2` ↔ `5.1.2`.)
 Para la siguiente versión: sube `versionCode` y `versionName` en `app/AndroidManifest.xml`, actualiza `CHANGELOG.md`, haz commit y crea la etiqueta nueva.
 
 ## 6 · Ajustes recomendados del repositorio

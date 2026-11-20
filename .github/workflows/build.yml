@@ -18,6 +18,8 @@ jobs:
   android:
     name: App Android (APK)
     runs-on: ubuntu-latest
+    outputs:
+      signed: ${{ steps.key.outputs.signed }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -30,32 +32,38 @@ jobs:
           V=$(grep -o 'android:versionName="[^"]*"' app/AndroidManifest.xml | sed 's/.*="\(.*\)"/\1/')
           if [ "v$V" != "${GITHUB_REF_NAME}" ]; then echo "::error::La etiqueta ${GITHUB_REF_NAME} no coincide con versionName v$V"; exit 1; fi
       - name: Preparar la clave de firma (si existe)
+        id: key
         env:
           KS_B64: ${{ secrets.ACTA_KEYSTORE_B64 }}
         run: |
           if [ -n "$KS_B64" ]; then
             echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/acta.p12"
             echo "ACTA_KEYSTORE=$RUNNER_TEMP/acta.p12" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
             echo "Se firmará con la clave de publicación."
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "::error::Falta el secreto ACTA_KEYSTORE_B64. Una versión publicada debe firmarse con tu clave (ver docs/PUBLICAR.md)."
-            exit 1
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sin el secreto ACTA_KEYSTORE_B64 no se publica la versión automáticamente: una versión publicada debe firmarse con tu clave (ver docs/PUBLICAR.md)."
           else
-            echo "::warning::No hay secreto ACTA_KEYSTORE_B64: el APK se firma con una clave de depuración temporal."
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::No hay secreto ACTA_KEYSTORE_B64: el APK se firma con una clave de depuración temporal (solo para pruebas)."
           fi
-      - name: Compilar
+      - if: steps.key.outputs.signed == 'true'
+        name: Compilar
         env:
           ACTA_REPO: ${{ github.repository }}
           ACTA_KEYSTORE_PASS: ${{ secrets.ACTA_KEYSTORE_PASS }}
           ACTA_KEY_ALIAS: ${{ secrets.ACTA_KEY_ALIAS }}
         run: ./scripts/build-android.sh
-      - name: Comprobar el APK
+      - if: steps.key.outputs.signed == 'true'
+        name: Comprobar el APK
         run: |
           mv build/Acta-*.apk Acta.apk
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$BT/aapt2" dump badging Acta.apk | head -3
           sha256sum Acta.apk
-      - uses: actions/upload-artifact@v4
+      - if: steps.key.outputs.signed == 'true'
+        uses: actions/upload-artifact@v4
         with:
           name: Acta-apk
           path: Acta.apk
@@ -87,7 +95,7 @@ jobs:
 
   release:
     name: Publicar versión
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') && needs.android.outputs.signed == 'true'
     needs: [android, pc]
     runs-on: ubuntu-latest
     permissions:
