@@ -10,7 +10,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 latest() { ls -d "$1"/* 2>/dev/null | sort -V | tail -1; }
-if [ -z "${ANDROID_JAR:-}" ]; then ANDROID_JAR="$(latest "$SDK/platforms")/android.jar"; fi
+if [ -z "${ANDROID_JAR:-}" ]; then
+  # Última plataforma ESTABLE (android-NN), ignorando las versiones beta o de extensión
+  PLAT="$(ls -d "$SDK"/platforms/android-[0-9]* 2>/dev/null | grep -E 'android-[0-9]+$' | sort -V | tail -1)"
+  ANDROID_JAR="$PLAT/android.jar"
+fi
 if [ -z "${AAPT2:-}${D8:-}${ZIPALIGN:-}${APKSIGNER:-}" ] || [ -n "$SDK" ]; then BT="$(latest "$SDK/build-tools" || true)"; fi
 AAPT2="${AAPT2:-${BT:-}/aapt2}"; D8="${D8:-${BT:-}/d8}"; ZIPALIGN="${ZIPALIGN:-${BT:-}/zipalign}"; APKSIGNER="${APKSIGNER:-${BT:-}/apksigner}"
 VC="$(grep -o 'android:versionCode="[0-9]*"' app/AndroidManifest.xml | grep -o '[0-9]*')"

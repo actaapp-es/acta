@@ -69,6 +69,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: pc/go.mod
+          cache: false
       - name: Compilar
         working-directory: pc
         run: |
