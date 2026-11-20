@@ -63,7 +63,7 @@ jobs:
           "$BT/aapt2" dump badging Acta.apk | head -3
           sha256sum Acta.apk
       - if: steps.key.outputs.signed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Acta-apk
           path: Acta.apk
@@ -87,7 +87,7 @@ jobs:
           cp LEEME.txt dist/ActaConexion/LEEME.txt
           cp ../LICENSE dist/ActaConexion/LICENSE.txt
           cd dist && zip -r ../ActaConexion-Windows.zip ActaConexion
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ActaConexion-Windows
           path: pc/ActaConexion-Windows.zip
