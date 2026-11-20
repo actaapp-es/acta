@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.1.6] · 2026-11-20
+### Seguridad
+- La clave de Groq se guarda ahora cifrada con el Android Keystore (antes, en claro dentro de los datos privados de la app). Las claves guardadas con versiones anteriores se migran solas.
+- Se quitó de un comentario del código un número de teléfono de ejemplo con formato real.
+### Añadido
+- En Ajustes: enlaces a Instagram y TikTok de Acta y un apartado de donaciones voluntarias con Bitcoin (solo en la versión completa).
+
 ## [5.1.5] · 2026-11-20
 ### Añadido
 - Al instalar, el tutorial se abre solo. Si sales de él puedes usar la app, pero un aviso amarillo «Termina el tutorial de instalación» permanece hasta completarlo.

@@ -152,7 +152,29 @@ final class Summarizer {
 
     // ------------------------------------------------------------------ Clave
 
-    static String key(Context c) { return Util.prefs(c).getString("ai_key", "").trim(); }
+    /** La clave de Groq se guarda cifrada con el Keystore; si había una antigua en claro, se migra. */
+    static String key(Context c) {
+        android.content.SharedPreferences p = Util.prefs(c);
+        String sealed = p.getString("ai_key_s", "");
+        if (!sealed.isEmpty()) {
+            try { return Crypto.openText(c, sealed).trim(); } catch (Exception e) { return ""; }
+        }
+        String old = p.getString("ai_key", "").trim();
+        if (!old.isEmpty()) setKey(c, old);
+        return old;
+    }
+
+    static void setKey(Context c, String k) {
+        android.content.SharedPreferences.Editor e = Util.prefs(c).edit();
+        k = k == null ? "" : k.trim();
+        try {
+            if (k.isEmpty()) { e.remove("ai_key_s").remove("ai_key"); }
+            else { e.putString("ai_key_s", Crypto.sealText(c, k)).remove("ai_key"); }
+        } catch (Exception ex) {
+            e.putString("ai_key", k); // último recurso: que la IA no deje de funcionar
+        }
+        e.apply();
+    }
 
     static boolean hasKey(Context c) { return !key(c).isEmpty(); }
 

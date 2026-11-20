@@ -85,6 +85,20 @@ final class Crypto {
         return dataKey;
     }
 
+    /** Cifra un texto corto (p. ej. la clave de la IA) con la clave del Keystore. */
+    static String sealText(Context ctx, String plain) throws Exception {
+        Cipher ci = Cipher.getInstance("AES/GCM/NoPadding");
+        ci.init(Cipher.ENCRYPT_MODE, key(ctx));
+        return "s1:" + b64(ci.getIV()) + ":" + b64(ci.doFinal(plain.getBytes("UTF-8")));
+    }
+
+    static String openText(Context ctx, String sealed) throws Exception {
+        String[] p = sealed.split(":");
+        Cipher ci = Cipher.getInstance("AES/GCM/NoPadding");
+        ci.init(Cipher.DECRYPT_MODE, key(ctx), new GCMParameterSpec(128, Base64.decode(p[1], Base64.NO_WRAP)));
+        return new String(ci.doFinal(Base64.decode(p[2], Base64.NO_WRAP)), "UTF-8");
+    }
+
     private static String b64(byte[] b) { return Base64.encodeToString(b, Base64.NO_WRAP); }
 
     // ------------------------------------------------------------------ Utilidades de formato

@@ -973,7 +973,7 @@ public class MainActivity extends Activity {
         renderDigits();
     }
 
-    /** Saca el teléfono de un texto copiado: «+34 612 34 56 78», «(612) 345-678», «tel:612345678», «Llámame al 612.345.678». */
+    /** Saca el teléfono de un texto copiado: «+34 6XX XX XX XX», «(6XX) XXX-XXX», «tel:6XXXXXXXX». */
     static String phoneFrom(CharSequence text) {
         if (text == null) return null;
         String s = text.toString().replace('\u00A0', ' ').replace('\u2011', '-').replace('\u2012', '-')

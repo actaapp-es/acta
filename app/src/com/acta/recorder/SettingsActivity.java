@@ -120,6 +120,18 @@ public class SettingsActivity extends Activity {
             }
         });
 
+        section("Síguenos");
+        row("Instagram", "@actaapp.es", new Click() {
+            @Override void on() { openUrl("https://www.instagram.com/actaapp.es"); }
+        });
+        row("TikTok", "@actaapp", new Click() {
+            @Override void on() { openUrl("https://www.tiktok.com/@actaapp"); }
+        });
+        section("Apoya a Acta");
+        row("Donar con Bitcoin", "Acta es gratis y sin anuncios. Si te resulta útil, puedes colaborar. Es voluntario.", new Click() {
+            @Override void on() { showDonate(); }
+        });
+
         // Ayuda: canal de Telegram.
         TextView help = Ui.button(this, "Ayuda por Telegram", true);
         Ui.icon(help, R.drawable.ic_send, R.color.on_accent, 20);
@@ -789,10 +801,40 @@ public class SettingsActivity extends Activity {
                 : "Graba aparte el nivel de tu micrófono para saber quién habla en cada frase. Si tu móvil no lo permite, la IA lo deduce por el contenido.");
     }
 
+    private void openUrl(String url) {
+        try { startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))); }
+        catch (Exception e) { Toast.makeText(this, "No se pudo abrir el enlace", Toast.LENGTH_LONG).show(); }
+    }
+
+    private static final String BTC_ADDRESS = "bc1qqpyyxg64ac9j4zksmslna9d8sxp9ht7r25k7t9";
+
+    private void showDonate() {
+        final android.widget.TextView t = new android.widget.TextView(this);
+        t.setText(BTC_ADDRESS);
+        t.setTextIsSelectable(true);
+        t.setTypeface(android.graphics.Typeface.MONOSPACE);
+        t.setTextSize(14);
+        t.setTextColor(getColor(R.color.ink));
+        t.setPadding(dp(24), dp(12), dp(24), dp(4));
+        new AlertDialog.Builder(this)
+                .setTitle("Donar con Bitcoin")
+                .setMessage("Gracias por apoyar a Acta. Las donaciones son voluntarias y no desbloquean nada: la app es igual para todos. Comprueba bien la dirección antes de enviar; las transacciones de Bitcoin no se pueden deshacer.")
+                .setView(t)
+                .setNegativeButton("Cerrar", null)
+                .setPositiveButton("Copiar dirección", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Bitcoin", BTC_ADDRESS));
+                        Toast.makeText(SettingsActivity.this, "Dirección copiada", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .show();
+    }
+
     private void editAiKey() {
         final android.widget.EditText in = new android.widget.EditText(this);
         in.setHint("Pega aquí tu clave (gsk_...)");
-        in.setText(Util.prefs(this).getString("ai_key", ""));
+        in.setText(Summarizer.key(this));
         in.setTextColor(getColor(R.color.ink));
         in.setHintTextColor(getColor(R.color.ink_3));
         int pad = dp(20);
@@ -808,7 +850,7 @@ public class SettingsActivity extends Activity {
                 .setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
                     @Override public void onClick(DialogInterface d, int w) {
                         String k = in.getText().toString().trim();
-                        Util.prefs(SettingsActivity.this).edit().putString("ai_key", k).apply();
+                        Summarizer.setKey(SettingsActivity.this, k);
                         if (k.isEmpty()) AiConsent.revoke(SettingsActivity.this);
                         else AiConsent.require(SettingsActivity.this, null);
                         refresh();
