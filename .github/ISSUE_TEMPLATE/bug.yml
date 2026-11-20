@@ -1,0 +1,28 @@
+name: Informar de un error
+description: Algo no funciona como debería
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Gracias por avisar. **No pegues números de teléfono, grabaciones ni claves** en este formulario."
+  - type: input
+    id: version
+    attributes: { label: Versión de Acta, placeholder: "5.1" }
+    validations: { required: true }
+  - type: input
+    id: phone
+    attributes: { label: Móvil y versión de Android/HyperOS, placeholder: "Xiaomi 15T Pro · HyperOS 3 · Android 16" }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: ¿Qué ha pasado?, description: "Qué esperabas y qué ocurrió en realidad." }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Pasos para reproducirlo }
+  - type: dropdown
+    id: area
+    attributes:
+      label: ¿En qué parte?
+      options: [Grabación de las dos voces, Conexión (Acta Conexión / tutorial), Llamadas e interfaz, IA y resúmenes, Otra]
+    validations: { required: true }

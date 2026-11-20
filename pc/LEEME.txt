@@ -1,0 +1,45 @@
+ACTA CONEXIÓN  ·  versión 1.0.0
+================================
+
+Qué hace
+--------
+Activa en tu móvil el modo que permite a Acta grabar las dos voces de cada llamada, y lo
+vuelve a activar solo cada vez que conectas el móvil por cable (hace falta tras reiniciarlo).
+Sustituye a los comandos "adb devices" y "adb tcpip 5555" del tutorial de Acta.
+
+Cómo se usa
+-----------
+1. Abre ActaConexion.exe (doble clic). No necesita instalación ni permisos de administrador.
+2. La primera vez descarga las herramientas oficiales de Android (adb) desde dl.google.com
+   (unos 7 MB). Si ya tienes la carpeta "platform-tools" en Descargas, Escritorio o junto al
+   programa, la usa sin descargar nada.
+3. Sigue la guía de la pantalla: depuración USB, cable y aceptar el aviso del móvil.
+4. Cuando todo esté en verde puedes desconectar el cable. Acta sigue conectado hasta que
+   reinicies el móvil. Tras reiniciarlo, conecta el cable y se activa sin que hagas nada.
+
+Para que reconecte solo
+-----------------------
+Activa "Iniciar con Windows" y "Seguir vigilando al cerrar la ventana". El programa queda en
+segundo plano (aparece como ActaConexion.exe en el Administrador de tareas). Para cerrarlo
+del todo, abre la ventana y pulsa "Salir".
+
+Datos y privacidad
+------------------
+- No envía nada a Internet, salvo la descarga única de adb desde Google.
+- Guarda sus ajustes y adb en %LOCALAPPDATA%\ActaConexion. Para desinstalar, borra esa carpeta
+  y el programa (y desactiva "Iniciar con Windows" antes).
+- La ventana usa Microsoft Edge (viene con Windows 10/11) o Chrome.
+
+Avisos de Windows
+-----------------
+Acta Conexión es software libre y su código está en el repositorio del proyecto. El ejecutable
+no lleva firma de un editor reconocido por Windows, así que SmartScreen o tu antivirus pueden
+mostrar un aviso la primera vez. Es normal en programas nuevos.
+
+- Comprueba la huella: en la página de la versión (Releases) está el archivo SHA256SUMS.txt.
+  En PowerShell:  Get-FileHash .\ActaConexion-Windows.zip -Algorithm SHA256
+- Si el archivo viene de una descarga: clic derecho > Propiedades > marca "Desbloquear".
+- En SmartScreen: "Más información" > "Ejecutar de todos modos".
+- Si lo prefieres, compílalo tú mismo: consulta docs/COMPILAR.md.
+
+Licencia: GPL-3.0-or-later (consulta LICENSE.txt).

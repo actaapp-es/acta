@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="hero_circle"/>
+    <item type="id" name="hero_icon"/>
+    <item type="id" name="hero_title"/>
+    <item type="id" name="hero_sub"/>
+    <item type="id" name="hero_action"/>
+</resources>

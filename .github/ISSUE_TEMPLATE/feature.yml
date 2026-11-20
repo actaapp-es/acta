@@ -1,0 +1,11 @@
+name: Proponer una mejora
+description: Una idea para Acta
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes: { label: ¿Qué te gustaría que hiciera Acta?, description: "Explica el problema que quieres resolver." }
+    validations: { required: true }
+  - type: textarea
+    id: alt
+    attributes: { label: ¿Has probado alguna alternativa? }

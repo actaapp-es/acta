@@ -1,0 +1,58 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bg">
+  <LinearLayout android:id="@+id/sel_bar" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="10dp" android:paddingTop="14dp" android:paddingBottom="4dp" android:minHeight="62dp" android:visibility="gone">
+    <ImageButton android:id="@+id/sel_close" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_x" android:background="@drawable/bg_icon_btn" android:contentDescription="Cancelar la selección"/>
+    <TextView android:id="@+id/sel_count" style="@style/Text" android:textSize="20sp" android:fontFamily="sans-serif-medium" android:textStyle="bold" android:fontFeatureSettings="tnum" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:singleLine="true" android:ellipsize="end"/>
+    <ImageButton android:id="@+id/sel_all" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_select_all" android:background="@drawable/bg_icon_btn" android:contentDescription="Seleccionar todas"/>
+    <ImageButton android:id="@+id/sel_fav" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_star" android:background="@drawable/bg_icon_btn" android:contentDescription="Añadir a favoritas"/>
+    <ImageButton android:id="@+id/sel_delete" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_trash" android:background="@drawable/bg_icon_btn" android:tint="@color/danger" android:contentDescription="Borrar las seleccionadas"/>
+  </LinearLayout>
+  <LinearLayout android:id="@+id/header" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="24dp" android:paddingEnd="10dp" android:paddingTop="14dp" android:paddingBottom="4dp">
+    <TextView android:id="@+id/title" style="@style/Text.Title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+    <ImageButton android:id="@+id/btn_open_contacts" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_contacts_app" android:background="@drawable/bg_icon_btn" android:contentDescription="Abrir la app de Contactos" android:visibility="gone"/>
+    <ImageButton android:id="@+id/btn_add" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_add_contact" android:background="@drawable/bg_icon_btn" android:contentDescription="Nuevo contacto" android:visibility="gone"/>
+    <ImageButton android:id="@+id/btn_search" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_search" android:background="@drawable/bg_icon_btn" android:contentDescription="Buscar en las conversaciones" android:visibility="gone"/>
+    <ImageButton android:id="@+id/btn_settings" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_settings" android:background="@drawable/bg_icon_btn" android:contentDescription="Ajustes"/>
+  </LinearLayout>
+
+  <!-- Estado correcto: pastilla verde -->
+  <LinearLayout android:id="@+id/status_ok" android:layout_width="wrap_content" android:layout_height="30dp" android:layout_marginStart="24dp" android:layout_marginBottom="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_pill_ok" android:paddingStart="10dp" android:paddingEnd="12dp" android:visibility="gone">
+    <ImageView android:layout_width="7dp" android:layout_height="7dp" android:src="@drawable/dot" android:tint="@color/ok"/>
+    <TextView android:id="@+id/status_ok_text" style="@style/Text" android:textSize="12.5sp" android:textColor="@color/ok" android:fontFamily="sans-serif-medium" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="Grabando ambas voces"/>
+  </LinearLayout>
+
+  <!-- Aviso: tarjeta -->
+  <LinearLayout android:id="@+id/banner" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginTop="2dp" android:layout_marginBottom="10dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_warn_card" android:paddingStart="14dp" android:paddingEnd="6dp" android:paddingTop="10dp" android:paddingBottom="10dp" android:minHeight="56dp" android:visibility="gone">
+    <ImageView android:id="@+id/banner_icon" android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_alert"/>
+    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
+      <TextView android:id="@+id/banner_text" style="@style/Text" android:textSize="14sp" android:fontFamily="sans-serif-medium" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+      <TextView android:id="@+id/banner_sub" style="@style/Text" android:textSize="12.5sp" android:lineSpacingExtra="2dp" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:visibility="gone"/>
+    </LinearLayout>
+    <TextView android:id="@+id/banner_action" style="@style/Text.Action" android:layout_width="wrap_content" android:layout_height="44dp" android:layout_marginStart="6dp"/>
+  </LinearLayout>
+
+  <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+    <include android:id="@+id/tab_recents" layout="@layout/tab_list"/>
+    <include android:id="@+id/tab_contacts" layout="@layout/tab_contacts"/>
+    <include android:id="@+id/tab_keypad" layout="@layout/tab_keypad"/>
+    <include android:id="@+id/tab_recordings" layout="@layout/tab_list"/>
+  </FrameLayout>
+  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/line"/>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="74dp" android:orientation="horizontal" android:background="@color/bg" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingBottom="4dp">
+    <LinearLayout android:id="@+id/nav_keypad" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:background="@drawable/bg_tbtn">
+      <FrameLayout android:id="@+id/nav_keypad_pill" android:layout_width="60dp" android:layout_height="32dp"><ImageView android:id="@+id/nav_keypad_icon" android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_tab_keypad"/></FrameLayout>
+      <TextView android:id="@+id/nav_keypad_label" style="@style/Text" android:textSize="12sp" android:textColor="@color/ink_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Teclado"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/nav_recents" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:background="@drawable/bg_tbtn">
+      <FrameLayout android:id="@+id/nav_recents_pill" android:layout_width="60dp" android:layout_height="32dp"><ImageView android:id="@+id/nav_recents_icon" android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_tab_recents"/></FrameLayout>
+      <TextView android:id="@+id/nav_recents_label" style="@style/Text" android:textSize="12sp" android:textColor="@color/ink_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Recientes"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/nav_contacts" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:background="@drawable/bg_tbtn">
+      <FrameLayout android:id="@+id/nav_contacts_pill" android:layout_width="60dp" android:layout_height="32dp"><ImageView android:id="@+id/nav_contacts_icon" android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_tab_contacts"/></FrameLayout>
+      <TextView android:id="@+id/nav_contacts_label" style="@style/Text" android:textSize="12sp" android:textColor="@color/ink_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Contactos"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/nav_recordings" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:background="@drawable/bg_tbtn">
+      <FrameLayout android:id="@+id/nav_recordings_pill" android:layout_width="60dp" android:layout_height="32dp"><ImageView android:id="@+id/nav_recordings_icon" android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_tab_recordings"/></FrameLayout>
+      <TextView android:id="@+id/nav_recordings_label" style="@style/Text" android:textSize="12sp" android:textColor="@color/ink_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Grabaciones"/>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

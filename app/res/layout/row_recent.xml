@@ -1,0 +1,23 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="16dp" android:paddingEnd="16dp">
+  <LinearLayout android:id="@+id/card" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:descendantFocusability="blocksDescendants">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="6dp" android:minHeight="68dp">
+      <FrameLayout android:layout_width="42dp" android:layout_height="42dp">
+        <TextView android:id="@+id/avatar" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_avatar" android:gravity="center" android:textSize="15sp" android:fontFamily="sans-serif-medium" android:textStyle="bold"/>
+        <ImageView android:id="@+id/avatar_icon" android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_tab_contacts" android:visibility="gone"/>
+        <ImageView android:id="@+id/photo" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" android:background="@drawable/bg_avatar" android:visibility="gone"/>
+      </FrameLayout>
+      <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="14dp" android:paddingTop="12dp" android:paddingBottom="12dp">
+        <TextView android:id="@+id/title" style="@style/Text.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:singleLine="true" android:ellipsize="end" android:fontFeatureSettings="tnum"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="4dp">
+          <ImageView android:id="@+id/dir" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginEnd="5dp"/>
+          <TextView android:id="@+id/sub" style="@style/Text.Meta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:singleLine="true" android:ellipsize="end" android:layout_weight="1"/>
+          <TextView android:id="@+id/sim" style="@style/Text.Chip" android:layout_width="wrap_content" android:layout_height="20dp" android:minHeight="20dp" android:paddingStart="7dp" android:paddingEnd="7dp" android:textSize="11sp" android:layout_marginStart="8dp" android:visibility="gone"/>
+          <ImageView android:id="@+id/rec" android:layout_width="13dp" android:layout_height="13dp" android:layout_marginStart="8dp" android:src="@drawable/ic_rec_mark" android:tint="@color/accent" android:visibility="gone"/>
+          <TextView android:id="@+id/rec_dur" style="@style/Text.Meta" android:textColor="@color/accent" android:fontFamily="sans-serif-medium" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:visibility="gone"/>
+        </LinearLayout>
+      </LinearLayout>
+      <ImageButton android:id="@+id/call" android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_call_small" android:tint="@color/accent" android:background="@drawable/bg_icon_btn" android:contentDescription="Llamar" android:focusable="false"/>
+    </LinearLayout>
+    <View android:id="@+id/sep" android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="70dp" android:background="@color/line"/>
+  </LinearLayout>
+</FrameLayout>

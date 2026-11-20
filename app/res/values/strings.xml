@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Acta</string>
+    <string name="widget_tasks_name">Tareas pendientes</string>
+    <string name="widget_tasks_desc">Las tareas acordadas en tus llamadas, para marcarlas como hechas.</string>
+    <string name="widget_contacts_name">Contactos de Acta (4×1)</string>
+    <string name="widget_contacts_large_name">Contactos de Acta (2×2)</string>
+    <string name="widget_contacts_desc">Llama con un toque a los contactos que elijas.</string>
+</resources>

@@ -1,0 +1,15 @@
+build/
+*.jks
+*.p12
+*.pem
+*.key
+*.keystore
+keystore*.b64
+local.properties
+.gradle/
+.idea/
+*.log
+*.syso.bak
+pc/dist/
+pc/*.exe
+.DS_Store

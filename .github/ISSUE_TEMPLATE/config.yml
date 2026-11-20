@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ayuda y dudas de uso (Telegram)
+    url: https://t.me/actaapp
+    about: Para preguntas de configuración usa el canal de Telegram.
+  - name: Vulnerabilidades de seguridad
+    url: https://github.com/actaapp-es/acta/security/advisories/new
+    about: No publiques fallos de seguridad en un issue; usa este aviso privado.

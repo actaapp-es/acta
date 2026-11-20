@@ -1,0 +1,7 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/item_root" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="4dp" android:paddingTop="7dp" android:paddingBottom="7dp">
+  <ImageView android:id="@+id/item_check" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginTop="-9dp" android:layout_marginStart="-6dp" android:padding="9dp" android:src="@drawable/widget_cbx" android:contentDescription="Marcar como hecha"/>
+  <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="4dp">
+    <TextView android:id="@+id/item_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/ink" android:textSize="14sp" android:fontFamily="sans-serif-medium" android:maxLines="2" android:ellipsize="end"/>
+    <TextView android:id="@+id/item_meta" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/ink_2" android:textSize="12sp" android:singleLine="true" android:ellipsize="end"/>
+  </LinearLayout>
+</LinearLayout>

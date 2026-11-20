@@ -1,0 +1,107 @@
+name: Compilar y publicar
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: App Android (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Comprobar que la etiqueta coincide con la versión de la app
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          V=$(grep -o 'android:versionName="[^"]*"' app/AndroidManifest.xml | sed 's/.*="\(.*\)"/\1/')
+          if [ "v$V" != "${GITHUB_REF_NAME}" ]; then echo "::error::La etiqueta ${GITHUB_REF_NAME} no coincide con versionName v$V"; exit 1; fi
+      - name: Preparar la clave de firma (si existe)
+        env:
+          KS_B64: ${{ secrets.ACTA_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/acta.p12"
+            echo "ACTA_KEYSTORE=$RUNNER_TEMP/acta.p12" >> "$GITHUB_ENV"
+            echo "Se firmará con la clave de publicación."
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "::error::Falta el secreto ACTA_KEYSTORE_B64. Una versión publicada debe firmarse con tu clave (ver docs/PUBLICAR.md)."
+            exit 1
+          else
+            echo "::warning::No hay secreto ACTA_KEYSTORE_B64: el APK se firma con una clave de depuración temporal."
+          fi
+      - name: Compilar
+        env:
+          ACTA_REPO: ${{ github.repository }}
+          ACTA_KEYSTORE_PASS: ${{ secrets.ACTA_KEYSTORE_PASS }}
+          ACTA_KEY_ALIAS: ${{ secrets.ACTA_KEY_ALIAS }}
+        run: ./scripts/build-android.sh
+      - name: Comprobar el APK
+        run: |
+          mv build/Acta-*.apk Acta.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/aapt2" dump badging Acta.apk | head -3
+          sha256sum Acta.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Acta-apk
+          path: Acta.apk
+          if-no-files-found: error
+
+  pc:
+    name: Acta Conexión (Windows)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: pc/go.mod
+      - name: Compilar
+        working-directory: pc
+        run: |
+          mkdir -p dist/ActaConexion
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go vet ./... || true
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags "-H windowsgui -s -w" -o dist/ActaConexion/ActaConexion.exe .
+          cp LEEME.txt dist/ActaConexion/LEEME.txt
+          cp ../LICENSE dist/ActaConexion/LICENSE.txt
+          cd dist && zip -r ../ActaConexion-Windows.zip ActaConexion
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ActaConexion-Windows
+          path: pc/ActaConexion-Windows.zip
+          if-no-files-found: error
+
+  release:
+    name: Publicar versión
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [android, pc]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Huellas SHA-256
+        run: cd dist && sha256sum Acta.apk ActaConexion-Windows.zip | tee SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/Acta.apk
+            dist/ActaConexion-Windows.zip
+            dist/SHA256SUMS.txt
