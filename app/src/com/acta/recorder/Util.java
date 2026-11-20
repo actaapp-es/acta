@@ -137,6 +137,32 @@ final class Util {
         return rm != null && rm.isRoleHeld(RoleManager.ROLE_DIALER);
     }
 
+    /** Pide ser la app de teléfono. Si el diálogo del sistema no se puede abrir, lleva a los ajustes. */
+    static void askDialer(android.app.Activity a, int rc) {
+        if (isDefaultDialer(a)) return;
+        try {
+            Intent i = requestDialerRole(a);
+            if (i != null) { a.startActivityForResult(i, rc); return; }
+        } catch (Throwable ignored) { }
+        dialerSettings(a);
+    }
+
+    /** Tras rechazar el diálogo (Android deja de mostrarlo): abre los ajustes de apps predeterminadas. */
+    static void dialerSettings(android.app.Activity a) {
+        android.widget.Toast.makeText(a, "Elige Acta en «App de teléfono»", android.widget.Toast.LENGTH_LONG).show();
+        String[] acts = {android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS,
+                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS};
+        for (String act : acts) {
+            try {
+                Intent i = new Intent(act);
+                if (act.equals(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS))
+                    i.setData(android.net.Uri.parse("package:" + a.getPackageName()));
+                a.startActivity(i);
+                return;
+            } catch (Throwable ignored) { }
+        }
+    }
+
     static Intent requestDialerRole(Context c) {
         RoleManager rm = (RoleManager) c.getSystemService(Context.ROLE_SERVICE);
         return rm != null ? rm.createRequestRoleIntent(RoleManager.ROLE_DIALER) : null;

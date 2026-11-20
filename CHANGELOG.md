@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.1.3] · 2026-11-20
+### Corregido
+- El botón «Establecer» de app de teléfono predeterminada del tutorial y del aviso inicial: si Android no muestra el diálogo (p. ej. tras rechazarlo), abre los ajustes de apps predeterminadas.
+- El enlace de Acta Conexión del tutorial ahora se abre al tocarlo y lleva a la página de la última versión.
+
 ## [5.1.2] · 2026-11-20
 ### Corregido
 - La app se cerraba al abrirla si no se había concedido el permiso de contactos. Ahora se abre siempre y ofrece conceder los permisos desde el aviso superior.

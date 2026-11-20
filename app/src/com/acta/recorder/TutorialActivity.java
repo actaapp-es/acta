@@ -227,7 +227,10 @@ public class TutorialActivity extends Activity {
     public void onRequestPermissionsResult(int rc, String[] p, int[] g) { detect(); render(); }
 
     @Override
-    protected void onActivityResult(int rc, int res, Intent data) { detect(); render(); }
+    protected void onActivityResult(int rc, int res, Intent data) {
+        if (rc == 1 && res != RESULT_OK && !Util.isDefaultDialer(this)) Util.dialerSettings(this);
+        detect(); render();
+    }
 
     // ------------------------------------------------------------------ Detección
 
@@ -544,8 +547,7 @@ public class TutorialActivity extends Activity {
         card.addView(checkRow("App de teléfono predeterminada", "Para grabar cada llamada", dDialer, "Establecer",
                 new View.OnClickListener() {
                     @Override public void onClick(View v) {
-                        Intent i = Util.requestDialerRole(TutorialActivity.this);
-                        if (i != null) startActivityForResult(i, 1);
+                        Util.askDialer(TutorialActivity.this, 1);
                     }
                 }));
         card.addView(Ui.separator(this, 18));
@@ -674,7 +676,7 @@ public class TutorialActivity extends Activity {
         LinearLayout card = cardBox(14);
         LinearLayout one = numbered(1, "Abre este enlace en el ordenador");
         one.addView(urlBox(Project.URL_PC), Ui.lpTop(this, Ui.MATCH, Ui.WRAP, 10));
-        TextView z = Ui.text(this, R.style.Text_Meta, "Se descarga un ZIP de unos 6 MB. Si no lo encuentras, entra en " + Project.URL_REPO + "/releases");
+        TextView z = Ui.text(this, R.style.Text_Meta, "Toca el enlace para abrirlo aquí, o cópialo y ábrelo en el ordenador. Descarga «ActaConexion-Windows.zip» (unos 3 MB).");
         z.setPadding(0, dp(8), 0, 0);
         one.addView(z);
         card.addView(numberedRow(1, one));
@@ -1175,7 +1177,12 @@ public class TutorialActivity extends Activity {
         t.setTypeface(Typeface.MONOSPACE);
         t.setTextSize(12.5f);
         t.setLineSpacing(dp(2), 1f);
-        t.setTextIsSelectable(true);
+        box.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                try { startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(u))); }
+                catch (Throwable e) { copy(u, "Enlace copiado"); }
+            }
+        });
         box.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         box.addView(copyButton(R.color.ink, new View.OnClickListener() {
             @Override public void onClick(View v) { copy(u, "Enlace copiado"); }

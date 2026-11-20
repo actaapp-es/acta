@@ -236,6 +236,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int rc, int res, Intent data) {
+        if (rc == RC_ROLE && res != RESULT_OK && !Util.isDefaultDialer(this)) Util.dialerSettings(this);
         refreshBanner();
     }
 
@@ -299,8 +300,7 @@ public class MainActivity extends Activity {
             act = "Establecer";
             click = new View.OnClickListener() {
                 @Override public void onClick(View v) {
-                    Intent i = Util.requestDialerRole(MainActivity.this);
-                    if (i != null) startActivityForResult(i, RC_ROLE);
+                    Util.askDialer(MainActivity.this, RC_ROLE);
                 }
             };
         } else if (!Util.coreGranted(this) || !Util.has(this, Manifest.permission.READ_CONTACTS)) {
