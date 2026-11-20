@@ -85,7 +85,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        getContentResolver().unregisterContentObserver(contactsObserver);
+        try { getContentResolver().unregisterContentObserver(contactsObserver); } catch (Throwable ignored) { }
         setBackHandler(false);
         super.onDestroy();
     }
@@ -124,7 +124,7 @@ public class MainActivity extends Activity {
                 safeStart(i);
             }
         });
-        getContentResolver().registerContentObserver(ContactsContract.Contacts.CONTENT_URI, true, contactsObserver);
+        watchContacts();
         findViewById(R.id.btn_open_contacts).setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { openContactsApp(); }
         });
@@ -172,9 +172,20 @@ public class MainActivity extends Activity {
         }
     }
 
+    private boolean watching;
+    /** Observa los contactos solo si hay permiso (sin él Android lanza SecurityException). */
+    private void watchContacts() {
+        if (watching || !Util.has(this, Manifest.permission.READ_CONTACTS)) return;
+        try {
+            getContentResolver().registerContentObserver(ContactsContract.Contacts.CONTENT_URI, true, contactsObserver);
+            watching = true;
+        } catch (Throwable ignored) { }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        watchContacts();
         if (themeSeen != Ui.themeGen) { recreate(); return; }
         // Sin bloqueos: la app se abre siempre. Los permisos y la configuración de las dos voces
         // se ofrecen en el aviso de arriba, cuando el usuario quiera.
