@@ -20,6 +20,7 @@ Las funciones de transcripción, resumen, tareas, contexto y «Pregunta a Acta»
 
 ## Conexiones de red
 - A Groq, solo si usas la IA.
+- A la API pública de GitHub, una vez al día, para saber si hay una versión nueva (solo en la versión completa). No se envía ningún dato tuyo; GitHub solo ve tu dirección IP. Puedes desactivarlo en Ajustes › «Avisar de versiones nuevas».
 - Acta Conexión (programa de Windows) descarga una vez las herramientas oficiales de Android (adb) desde dl.google.com. No envía datos a ningún sitio.
 - La app puede abrir enlaces (GitHub, Telegram) solo cuando pulsas en ellos.
 

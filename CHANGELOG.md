@@ -2,6 +2,10 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.1.7] · 2026-11-21
+### Añadido
+- Aviso de versiones nuevas (versión completa): una vez al día Acta consulta la API pública de GitHub y, si hay una versión más reciente, te lo notifica con un enlace a la página oficial. No envía datos tuyos (GitHub solo ve la IP). Se desactiva en Ajustes › «Avisar de versiones nuevas».
+
 ## [5.1.6] · 2026-11-20
 ### Seguridad
 - La clave de Groq se guarda ahora cifrada con el Android Keystore (antes, en claro dentro de los datos privados de la app). Las claves guardadas con versiones anteriores se migran solas.

@@ -59,6 +59,7 @@ public class ActaApp extends Application {
                 cleanTemp(new File(getCacheDir(), "ai"));
                 try { Crypto.encryptAll(app); } catch (Throwable ignored) { }
                 try { Cleanup.maybeRun(app); Cleanup.schedule(app); } catch (Throwable ignored) { }
+                try { UpdateCheck.schedule(app); UpdateCheck.maybeRun(app); } catch (Throwable ignored) { }
             }
         }, "acta-crypto-migrate").start();
     }

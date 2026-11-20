@@ -14,6 +14,7 @@ public class BootReceiver extends BroadcastReceiver {
                 || "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED".equals(a)) {
             QuickActions.rescheduleAll(c);
             Cleanup.schedule(c);
+            UpdateCheck.schedule(c);
         }
         if (Intent.ACTION_BOOT_COMPLETED.equals(a) && Util.nativeAdbEnabled(c) && NativeAdbManager.savedPort(c) != 0) {
             final PendingResult pr = goAsync();
