@@ -18,6 +18,8 @@ public class ActaApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        try { if (Build.VERSION.SDK_INT >= 28 && Application.getProcessName().endsWith(":crash")) return; } catch (Throwable ignored) { }
+        try { CrashActivity.install(this); } catch (Throwable ignored) { }
         try { ShizukuManager.init(); } catch (Throwable ignored) { }
         // Mantiene viva la conexión ADB para que las llamadas (incluso cortas) la encuentren lista.
         try { NativeAdbManager.startKeepAlive(this); } catch (Throwable ignored) { }
