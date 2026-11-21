@@ -95,7 +95,7 @@ final class AutoAnalyzer {
                     if (pt.done && pt.title.equalsIgnoreCase(nt.title)) nt.done = true;
             Db.get(c).updateAnalysis(id, o.result.toJson(), o.transcript, o.segments);
             Util.prefs(c).edit().remove("ai_err_" + id).remove("ai_try_" + id).apply();
-            if (!manual) AnalysisJob.notifyDone(c, call, o.result);
+            if (!manual) { AnalysisJob.suggestContact(c, call, o.result); AnalysisJob.notifyDone(c, call, o.result); }
             return DONE;
         } catch (Throwable t) {
             String msg = t.getMessage() != null ? t.getMessage() : "No se pudo analizar la llamada.";

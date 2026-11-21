@@ -108,6 +108,12 @@ final class Db extends SQLiteOpenHelper {
         getWritableDatabase().update("calls", v, "_id=?", new String[]{String.valueOf(id)});
     }
 
+    void updateFile(long id, String file) {
+        ContentValues v = new ContentValues();
+        v.put("file", file);
+        getWritableDatabase().update("calls", v, "_id=?", new String[]{String.valueOf(id)});
+    }
+
     void updateMarks(long id, String marks) {
         ContentValues v = new ContentValues();
         v.put("marks", marks);

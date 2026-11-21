@@ -315,7 +315,7 @@ public final class AdbRecorderMain {
                 r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
                 r.setAudioChannels(1);
                 r.setAudioSamplingRate(src == MediaRecorder.AudioSource.VOICE_CALL ? 16000 : 44100);
-                r.setAudioEncodingBitRate(src == MediaRecorder.AudioSource.VOICE_CALL ? 64000 : 96000);
+                r.setAudioEncodingBitRate(src == MediaRecorder.AudioSource.VOICE_CALL ? 32000 : 48000);
                 r.setOutputFile(out.getAbsolutePath());
                 r.prepare(); r.start();
                 recorder = r; used = src; log("REC " + name(src)); break;

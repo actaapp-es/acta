@@ -41,6 +41,8 @@ public class Cleanup extends JobService {
         if (had && !f.delete()) return false;
         //noinspection ResultOfMethodCallIgnored
         SpeakerSplit.vadFor(c, call.file).delete();
+        //noinspection ResultOfMethodCallIgnored
+        AudioPack.nrgFor(c, call.file).delete();
         return had;
     }
 

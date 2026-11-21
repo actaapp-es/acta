@@ -384,6 +384,9 @@ public class DetailActivity extends Activity {
                             Intent i = new Intent(Intent.ACTION_INSERT_OR_EDIT);
                             i.setType(android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE);
                             i.putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, call.number);
+                            Summarizer.Result pr = Summarizer.parse(call.summary);
+                            if (pr != null && !pr.person.isEmpty())
+                                i.putExtra(android.provider.ContactsContract.Intents.Insert.NAME, pr.person);
                             safeStart(i);
                         } else if (it.equals("Ver contacto")) {
                             Uri u = Uri.withAppendedPath(android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(call.number));
@@ -1144,6 +1147,8 @@ public class DetailActivity extends Activity {
                         file.delete();
                         //noinspection ResultOfMethodCallIgnored
                         SpeakerSplit.vadFor(DetailActivity.this, call.file).delete();
+                        //noinspection ResultOfMethodCallIgnored
+                        AudioPack.nrgFor(DetailActivity.this, call.file).delete();
                         Db.get(DetailActivity.this).delete(call.id);
                         finish();
                     }

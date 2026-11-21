@@ -15,6 +15,7 @@ import android.text.TextUtils;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * Servicio que Android usa cuando Acta es la app de teléfono predeterminada:
@@ -144,6 +145,7 @@ public class ActaInCallService extends InCallService {
         call.unregisterCallback(callback);
         CallManager.calls.remove(call);
         if (CallManager.calls.isEmpty()) {
+            AudioRoute.reset();
             if (foreground) {
                 stopForeground(STOP_FOREGROUND_REMOVE);
                 foreground = false;
@@ -160,6 +162,7 @@ public class ActaInCallService extends InCallService {
     @Override
     public void onCallAudioStateChanged(CallAudioState state) {
         CallManager.audio = state;
+        AudioRoute.observe(state);
         updateNotification();
         CallManager.changed();
     }
@@ -248,6 +251,19 @@ public class ActaInCallService extends InCallService {
                 String fname = stamp + "_" + (c.direction == 1 ? "entrante" : "saliente") + "_" + Util.safe(c.number) + ext;
                 File target = new File(f.getParentFile(), fname);
                 File saved = f.renameTo(target) ? target : f;
+                // La grabación con ambas voces sale en WAV sin comprimir (muy pesado): se pasa a AAC mono ligero.
+                if (saved.getName().toLowerCase(Locale.ROOT).endsWith(".wav")) {
+                    try {
+                        File small = new File(saved.getParentFile(), saved.getName().replaceAll("(?i)\\.wav$", ".m4a"));
+                        int[] nrg = SpeakerSplit.wavEnergy(saved);
+                        if (AudioPack.compress(saved, small)) {
+                            AudioPack.saveEnergy(ActaInCallService.this, small.getName(), nrg);
+                            //noinspection ResultOfMethodCallIgnored
+                            saved.delete();
+                            saved = small;
+                        }
+                    } catch (Throwable ignored) { }
+                }
                 c.file = saved.getName();
                 // Pista de tu voz (para saber quién habla): se guarda aparte, en privado.
                 File vad = new File(f.getPath() + ".vad");

@@ -2,6 +2,17 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.2.0] · 2026-11-21
+### Añadido
+- **Añadir a contactos tras la llamada:** si alguien que no está en tus contactos se presenta en la conversación, al terminar el análisis con IA aparece una notificación para añadirlo con su nombre y número ya rellenados (también en «Añadir a contactos» de la ficha de la llamada). Necesita la IA activada.
+- **Botón «Contexto» durante la llamada:** resumen en pantalla de quién es esa persona según vuestras llamadas anteriores (de qué habéis hablado y qué queda pendiente). Funciona sin conexión.
+- **«Llamando…»** en pantalla mientras suena una llamada saliente (antes mostraba «Elige la tarjeta» por error).
+- **Reducir el peso de grabaciones antiguas** (Ajustes › Almacenamiento).
+### Mejorado
+- **Audios mucho más ligeros:** la grabación con ambas voces se guarda en AAC mono de 24 kbps (unas 10 veces menos que antes) en lugar de WAV sin comprimir; las demás rutas también bajan de bitrate. La IA sigue distinguiendo quién habla y admite llamadas más largas.
+### Corregido
+- Con Bluetooth conectado, al pasar a altavoz el botón de audio vuelve a ofrecer Bluetooth.
+
 ## [5.1.7] · 2026-11-21
 ### Añadido
 - Aviso de versiones nuevas (versión completa): una vez al día Acta consulta la API pública de GitHub y, si hay una versión más reciente, te lo notifica con un enlace a la página oficial. No envía datos tuyos (GitHub solo ve la IP). Se desactiva en Ajustes › «Avisar de versiones nuevas».

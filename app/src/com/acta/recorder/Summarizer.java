@@ -60,7 +60,7 @@ final class Summarizer {
     }
 
     static final class Result {
-        String context = "", summary = "", note = "";
+        String context = "", summary = "", note = "", person = "";
         final List<Task> tasks = new ArrayList<>();
 
         int pending() {
@@ -76,6 +76,7 @@ final class Summarizer {
                 o.put("contexto", context);
                 o.put("resumen", summary);
                 o.put("nota", note);
+                o.put("interlocutor", person);
                 JSONArray arr = new JSONArray();
                 for (Task t : tasks) {
                     JSONObject j = new JSONObject();
@@ -121,6 +122,7 @@ final class Summarizer {
         r.context = clean(o.optString("contexto", ""));
         r.summary = clean(o.optString("resumen", ""));
         r.note = clean(o.optString("nota", ""));
+        r.person = cleanName(o.optString("interlocutor", ""));
         JSONArray arr = o.optJSONArray("tareas");
         if (arr != null) {
             for (int i = 0; i < arr.length(); i++) {
@@ -143,6 +145,16 @@ final class Summarizer {
             }
         }
         return r;
+    }
+
+    /** Nombre de la otra persona tal como se presentó; descarta frases largas o valores genéricos. */
+    private static String cleanName(String s) {
+        s = clean(s).replaceAll("\\s+", " ");
+        if (s.length() < 2 || s.length() > 40 || s.split(" ").length > 4) return "";
+        String l = s.toLowerCase(Util.ES);
+        if (l.contains("desconocid") || l.contains("sin nombre") || l.matches(".*\\bno se\\b.*") || l.contains("otra persona")
+                || l.equals("tú") || l.equals("tu") || l.contains("n/a") || l.matches(".*\\d.*")) return "";
+        return s;
     }
 
     private static String clean(String s) {
@@ -245,7 +257,9 @@ final class Summarizer {
                 if (sg.t >= 0) timed = true;
             }
             // Quién habla, a partir de la pista de tu voz grabada aparte (si la hay).
-            if (timed && clean.size() >= 2 && plain.getName().toLowerCase(Locale.ROOT).endsWith(".wav")) {
+            boolean isWav = plain.getName().toLowerCase(Locale.ROOT).endsWith(".wav");
+            int[] mixEnergy = isWav ? null : AudioPack.readEnergy(c, call.file);
+            if (timed && clean.size() >= 2 && (isWav || mixEnergy != null)) {
                 SpeakerSplit.Vad vad = SpeakerSplit.readVad(SpeakerSplit.vadFor(c, call.file));
                 if (vad != null) {
                     double[] st = new double[clean.size()], en = new double[clean.size()];
@@ -255,7 +269,7 @@ final class Summarizer {
                         double next = i + 1 < clean.size() ? clean.get(i + 1).t : st[i] + 4;
                         en[i] = e > st[i] ? Math.min(e, next + 0.3) : next;
                     }
-                    spk = SpeakerSplit.fromAudio(SpeakerSplit.wavEnergy(plain), vad, st, en);
+                    spk = SpeakerSplit.fromAudio(isWav ? SpeakerSplit.wavEnergy(plain) : mixEnergy, vad, st, en);
                 }
             }
         } finally {
@@ -408,7 +422,7 @@ final class Summarizer {
                 + "saludos, nombres, preguntas y respuestas). ")
                 + "Puede tener errores de reconocimiento. Analízala con rigor y responde SOLO con un objeto JSON válido, en español, "
                 + "con exactamente esta forma:\n"
-                + "{\"contexto\": \"...\", \"resumen\": \"...\", \"nota\": \"...\", \"tareas\": [{\"titulo\": \"...\", "
+                + "{\"contexto\": \"...\", \"resumen\": \"...\", \"nota\": \"...\", \"interlocutor\": \"...\", \"tareas\": [{\"titulo\": \"...\", "
                 + "\"detalle\": \"...\", \"responsable\": \"...\", \"fecha\": \"AAAA-MM-DD\" o null, "
                 + "\"hora\": \"HH:MM\" o null}]}\n\n"
                 + "Reglas:\n"
@@ -423,6 +437,9 @@ final class Summarizer {
                 + "recuerde en la PRÓXIMA llamada con esta persona lo más importante de esta. Empieza en minúscula "
                 + "salvo nombres propios. Ejemplos: «quedó en enviarte el presupuesto el viernes», «le debes "
                 + "confirmar la reunión del lunes», «te contó que se cambia de oficina». Si no hay nada relevante, \"\".\n"
+                + "- interlocutor: el nombre (con apellido solo si lo dice) de la OTRA persona, SOLO si en la conversación "
+                + "se presenta o se la nombra claramente (p. ej. «soy Marta», «te habla Luis García»). Nunca el nombre del "
+                + "dueño del teléfono ni el de un tercero. Si no se dice con claridad, \"\". No lo deduzcas ni inventes.\n"
                 + "- tareas: solo acciones concretas que alguien pide, ordena, encarga o se compromete a hacer "
                 + "(llamar, enviar, pagar, revisar, preparar, reunirse, recoger, confirmar…). No inventes tareas: "
                 + "si no hay ninguna, devuelve [].\n"

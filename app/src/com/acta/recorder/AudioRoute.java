@@ -31,8 +31,52 @@ final class AudioRoute {
 
     static boolean speaker(CallAudioState a) { return route(a) == CallAudioState.ROUTE_SPEAKER; }
 
+    /** true si en esta llamada ha habido un dispositivo Bluetooth conectado (aunque ahora suene por el altavoz). */
+    private static volatile boolean btSeen;
+
+    /** Se llama en cada cambio de audio: recuerda si hay Bluetooth, para no perderlo al pasar a altavoz. */
+    static void observe(CallAudioState a) {
+        if (rawBluetooth(a)) btSeen = true;
+    }
+
+    /** Se llama al terminar todas las llamadas. */
+    static void reset() { btSeen = false; }
+
+    private static boolean rawBluetooth(CallAudioState a) {
+        if (a == null) return false;
+        if ((a.getSupportedRouteMask() & CallAudioState.ROUTE_BLUETOOTH) != 0) return true;
+        if (a.getRoute() == CallAudioState.ROUTE_BLUETOOTH) return true;
+        try {
+            Collection<BluetoothDevice> d = a.getSupportedBluetoothDevices();
+            if (d != null && !d.isEmpty()) return true;
+            return a.getActiveBluetoothDevice() != null;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Hay Bluetooth conectado al teléfono (el sistema lo lista entre las salidas de audio). */
+    private static boolean bluetoothOutputConnected() {
+        try {
+            Context c = CallManager.service;
+            if (c == null) return false;
+            android.media.AudioManager am = c.getSystemService(android.media.AudioManager.class);
+            if (am == null) return false;
+            for (android.media.AudioDeviceInfo d : am.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS)) {
+                int t = d.getType();
+                if (t == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                        || t == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP
+                        || (Build.VERSION.SDK_INT >= 31 && t == android.media.AudioDeviceInfo.TYPE_BLE_HEADSET))
+                    return true;
+            }
+        } catch (Throwable ignored) { }
+        return false;
+    }
+
     static boolean bluetoothAvailable(CallAudioState a) {
-        return a != null && (a.getSupportedRouteMask() & CallAudioState.ROUTE_BLUETOOTH) != 0;
+        if (a == null) return false;
+        if (rawBluetooth(a)) { btSeen = true; return true; }
+        return btSeen || bluetoothOutputConnected();
     }
 
     /** El botón se ilumina cuando el sonido no sale por el propio teléfono. */

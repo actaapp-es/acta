@@ -81,6 +81,9 @@ public class InCallActivity extends Activity implements CallManager.Listener {
                 render();
             }
         });
+        findViewById(R.id.btn_ctx).setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showContext(); }
+        });
         dtmf = findViewById(R.id.dtmf);
         dtmfDigits = findViewById(R.id.dtmf_digits);
         mute = findViewById(R.id.btn_mute);
@@ -163,6 +166,23 @@ public class InCallActivity extends Activity implements CallManager.Listener {
         startActivity(QuickActionsActivity.intent(this, CallManager.number(c), mode));
     }
 
+    /** Botón «Contexto»: pequeño resumen de quién es esta persona según las llamadas anteriores. */
+    private void showContext() {
+        Call c = CallManager.primary();
+        if (c == null) return;
+        String number = CallManager.number(c);
+        String name = Util.contactName(this, number);
+        android.app.KeyguardManager km = getSystemService(android.app.KeyguardManager.class);
+        boolean redact = AppLock.enabled(this) && km != null && km.isKeyguardLocked();
+        String text = CallContext.detail(this, number, redact);
+        if (text == null) text = "Es la primera vez que hablas con esta persona, o aún no tienes llamadas guardadas con ella.";
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(!TextUtils.isEmpty(name) ? name : Util.number(this, number))
+                .setMessage(text)
+                .setPositiveButton("Cerrar", null)
+                .show();
+    }
+
     private void answer() {
         Call c = CallManager.primary();
         if (c != null && c.getState() == Call.STATE_RINGING) c.answer(VideoProfile.STATE_AUDIO_ONLY);
@@ -239,12 +259,12 @@ public class InCallActivity extends Activity implements CallManager.Listener {
             case Call.STATE_RINGING: state.setText("Llamada entrante"); break;
             case Call.STATE_ACTIVE: state.setText("En llamada"); break;
             case Call.STATE_DIALING:
-            case Call.STATE_CONNECTING:
+            case Call.STATE_CONNECTING: state.setText("Llamando…"); break;
             case Call.STATE_SELECT_PHONE_ACCOUNT: state.setText("Elige la tarjeta"); break;
             case Call.STATE_HOLDING: state.setText("En espera"); break;
             case Call.STATE_DISCONNECTED:
             case Call.STATE_DISCONNECTING: state.setText("Llamada finalizada"); break;
-            default: state.setText(CallManager.incoming(c) ? "Llamada entrante" : "Llamada saliente");
+            default: state.setText(CallManager.incoming(c) ? "Llamada entrante" : "Llamando…");
         }
         if (s != Call.STATE_ACTIVE) timer.setText(s == Call.STATE_HOLDING ? timer.getText() : "");
 
@@ -273,6 +293,8 @@ public class InCallActivity extends Activity implements CallManager.Listener {
         animate(isRinging, recording);
         TextView mark = findViewById(R.id.btn_mark);
         mark.setVisibility(recording && !isRinging && !dtmfOpen && !selecting ? View.VISIBLE : View.GONE);
+        findViewById(R.id.btn_ctx).setVisibility(
+                (s == Call.STATE_ACTIVE || s == Call.STATE_HOLDING) && !dtmfOpen && !selecting ? View.VISIBLE : View.GONE);
         int nm = CallManager.service != null ? CallManager.service.markCount() : 0;
         mark.setText(nm == 0 ? "Marcar momento" : "Marcar momento · " + nm);
 

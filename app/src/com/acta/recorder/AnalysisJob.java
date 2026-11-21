@@ -95,6 +95,41 @@ public class AnalysisJob extends JobService {
     @Override
     public boolean onStopJob(JobParameters params) { return true; }
 
+    /**
+     * Si el número no está en tus contactos y en la conversación la otra persona se presentó,
+     * avisa para añadirla a contactos con el nombre y el número ya rellenados.
+     */
+    static void suggestContact(Context c, Db.Call call, Summarizer.Result r) {
+        if (r == null || r.person.isEmpty() || TextUtils.isEmpty(call.number)) return;
+        if (!TextUtils.isEmpty(Util.contactName(c, call.number))) return; // ya es un contacto
+        NotificationManager nm = c.getSystemService(NotificationManager.class);
+        if (nm == null || !nm.areNotificationsEnabled()) return;
+        NotificationChannel ch = new NotificationChannel("new_contact", "Contactos nuevos", NotificationManager.IMPORTANCE_DEFAULT);
+        ch.setDescription("Propone añadir a contactos a quien se presenta en una llamada");
+        nm.createNotificationChannel(ch);
+        Intent add = new Intent(Intent.ACTION_INSERT_OR_EDIT);
+        add.setType(android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE);
+        add.putExtra(android.provider.ContactsContract.Intents.Insert.NAME, r.person);
+        add.putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, call.number);
+        add.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent open = PendingIntent.getActivity(c, 60_000 + (int) (call.id % 10_000), add,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        String text = AppLock.enabled(c)
+                ? "Toca para añadir este número a tus contactos."
+                : "Se presentó como «" + r.person + "» (" + Util.number(c, call.number) + "). Toca para añadirlo a tus contactos.";
+        Notification n = new Notification.Builder(c, "new_contact")
+                .setSmallIcon(R.drawable.ic_call)
+                .setColor(c.getColor(R.color.accent))
+                .setContentTitle("¿Añadir a contactos?")
+                .setContentText(text)
+                .setStyle(new Notification.BigTextStyle().bigText(text))
+                .setVisibility(Notification.VISIBILITY_PRIVATE)
+                .setAutoCancel(true)
+                .setContentIntent(open)
+                .build();
+        nm.notify(60_000 + (int) (call.id % 10_000), n);
+    }
+
     static void notifyDone(Context c, Db.Call call, Summarizer.Result r) {
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         if (nm == null) return;

@@ -101,6 +101,10 @@ public class SettingsActivity extends Activity {
                 "Solo el audio. Se conservan las transcripciones, los resúmenes y las grabaciones favoritas.", new Click() {
             @Override void on() { chooseKeepDays(); }
         });
+        row("Reducir el peso de grabaciones antiguas",
+                "Convierte las grabaciones con ambas voces que ocupan más (WAV) a un formato ligero. Se pierde un poco de calidad, que en voz apenas se nota. No se puede deshacer.", new Click() {
+            @Override void on() { confirmPack(); }
+        });
         rowExport = row("Exportar registro", "Archivo CSV con número, fecha, hora y duración de cada llamada.", new Click() {
             @Override void on() { exportCsv(); }
         });
@@ -804,6 +808,39 @@ public class SettingsActivity extends Activity {
         ss.setText(SpeakerSplit.bad(this)
                 ? "Tu móvil silenciaba la grabación al separar voces, así que se desactivó. La IA deduce quién habla por el contenido."
                 : "Graba aparte el nivel de tu micrófono para saber quién habla en cada frase. Si tu móvil no lo permite, la IA lo deduce por el contenido.");
+    }
+
+    private void confirmPack() {
+        final long[] p = AudioPack.pending(this);
+        if (p[0] == 0) {
+            Toast.makeText(this, "No hay grabaciones pesadas que reducir. Las nuevas ya se guardan ligeras.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Reducir " + p[0] + (p[0] == 1 ? " grabación" : " grabaciones"))
+                .setMessage("Ocupan " + Util.size(p[1]) + ". Se convertirán a un formato unas 10 veces más ligero. "
+                        + "Se conservan la transcripción, el resumen y las tareas, pero el cambio no se puede deshacer. "
+                        + "Puede tardar unos minutos; deja la app abierta.")
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Reducir", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        Toast.makeText(SettingsActivity.this, "Reduciendo grabaciones…", Toast.LENGTH_SHORT).show();
+                        final android.content.Context app = getApplicationContext();
+                        new Thread(new Runnable() {
+                            @Override public void run() {
+                                final int n = AudioPack.migrateOld(app);
+                                runOnUiThread(new Runnable() {
+                                    @Override public void run() {
+                                        Toast.makeText(SettingsActivity.this, n == 0 ? "No se pudo reducir ninguna grabación."
+                                                : "Listo: " + n + (n == 1 ? " grabación reducida" : " grabaciones reducidas"), Toast.LENGTH_LONG).show();
+                                        refresh();
+                                    }
+                                });
+                            }
+                        }, "acta-pack").start();
+                    }
+                })
+                .show();
     }
 
     private void openUrl(String url) {
