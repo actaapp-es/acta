@@ -2,6 +2,10 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.2.1] · 2026-11-21
+### Eliminado
+- **Aviso de versiones nuevas:** la app ya no consulta GitHub ni ningún otro servidor para buscar actualizaciones. Ahora Acta solo se conecta a internet si activas la IA con tu clave de Groq. Al actualizar se cancela la tarea programada de la versión anterior.
+
 ## [5.2.0] · 2026-11-21
 ### Añadido
 - **Añadir a contactos tras la llamada:** si alguien que no está en tus contactos se presenta en la conversación, al terminar el análisis con IA aparece una notificación para añadirlo con su nombre y número ya rellenados (también en «Añadir a contactos» de la ficha de la llamada). Necesita la IA activada.

@@ -136,9 +136,6 @@ public class SettingsActivity extends Activity {
             @Override void on() { showDonate(); }
         });
 
-        rowUpd = row("Avisar de versiones nuevas", "Una vez al día, Acta pregunta a GitHub si hay una versión más reciente y te avisa. GitHub solo ve tu dirección IP.", new Click() {
-            @Override void on() { flip(UpdateCheck.PREF); UpdateCheck.schedule(SettingsActivity.this); }
-        });
 
         // Ayuda: canal de Telegram.
         TextView help = Ui.button(this, "Ayuda por Telegram", true);
@@ -799,7 +796,6 @@ public class SettingsActivity extends Activity {
         status(rowAiKey, has ? "Configurada" : "Añadir", has);
         toggle(rowAiAuto, AnalysisJob.enabled(this));
         toggle(rowAiCtx, CallContext.enabled(this));
-        if (rowUpd != null) toggle(rowUpd, UpdateCheck.enabled(this));
         String on = SpeakerSplit.ownerName(this);
         status(rowOwner, on.isEmpty() ? "Añadir" : on, true);
         if (on.isEmpty()) ((TextView) rowOwner.findViewById(R.id.value)).setTextColor(getColor(R.color.ink_3));
@@ -848,7 +844,6 @@ public class SettingsActivity extends Activity {
         catch (Exception e) { Toast.makeText(this, "No se pudo abrir el enlace", Toast.LENGTH_LONG).show(); }
     }
 
-    private View rowUpd;
     private static final String BTC_ADDRESS = "bc1qqpyyxg64ac9j4zksmslna9d8sxp9ht7r25k7t9";
 
     private void showDonate() {
