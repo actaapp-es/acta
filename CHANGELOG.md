@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.2.2] · 2026-11-22
+### Mejorado
+- **Límite de uso de Groq:** cuando el plan gratuito alcanza su límite, Acta lee cuánto hay que esperar, lo muestra («Reintento automático en 12 min») y vuelve a intentarlo sola, hasta 15 minutos de espera. Si Groq pide más, indica cuánto falta.
+- **Sin repetir la transcripción:** si el resumen falla después de transcribir, el siguiente intento reutiliza la transcripción ya hecha (se guarda unas horas en la memoria privada de la app) y no vuelve a gastar minutos de audio.
+
 ## [5.2.1] · 2026-11-21
 ### Eliminado
 - **Aviso de versiones nuevas:** la app ya no consulta GitHub ni ningún otro servidor para buscar actualizaciones. Ahora Acta solo se conecta a internet si activas la IA con tu clave de Groq. Al actualizar se cancela la tarea programada de la versión anterior.

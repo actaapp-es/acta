@@ -95,8 +95,17 @@ final class AutoAnalyzer {
                     if (pt.done && pt.title.equalsIgnoreCase(nt.title)) nt.done = true;
             Db.get(c).updateAnalysis(id, o.result.toJson(), o.transcript, o.segments);
             Util.prefs(c).edit().remove("ai_err_" + id).remove("ai_try_" + id).apply();
+            Summarizer.clearCache(c, id);
             if (!manual) { AnalysisJob.suggestContact(c, call, o.result); AnalysisJob.notifyDone(c, call, o.result); }
             return DONE;
+        } catch (Summarizer.RateLimit rl) {
+            // Espera lo que pide Groq (hasta 15 min; si no lo dice, 1 min) y reintenta sin repetir la transcripción.
+            int sec = rl.seconds > 0 ? rl.seconds : 60;
+            if (sec > 900) { setError(c, id, rl.getMessage()); return FAILED; }
+            setError(c, id, "Límite de Groq alcanzado. Reintento automático en " + Summarizer.waitText(sec) + ".");
+            notifyChanged(c);
+            sleep((sec + 2) * 1000L);
+            return RETRY;
         } catch (Throwable t) {
             String msg = t.getMessage() != null ? t.getMessage() : "No se pudo analizar la llamada.";
             setError(c, id, msg);

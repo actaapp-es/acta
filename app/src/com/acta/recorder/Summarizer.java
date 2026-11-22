@@ -201,6 +201,64 @@ final class Summarizer {
     }
 
     /** Frase de la transcripción con el segundo en que empieza. */
+    /** Límite de uso de Groq alcanzado; seconds es lo que Groq pide esperar (-1 si no lo indica). */
+    static final class RateLimit extends Exception {
+        final int seconds;
+        RateLimit(int seconds) {
+            super("Límite gratuito de Groq alcanzado. " + (seconds > 0 ? "Vuelve a intentarlo en " + waitText(seconds) + "." : "Prueba en unos minutos."));
+            this.seconds = seconds;
+        }
+    }
+
+    /** Lee de la respuesta de Groq cuánto hay que esperar («try again in 7m12.5s»). */
+    static int retrySeconds(String body) {
+        if (body == null) return -1;
+        java.util.regex.Matcher m = Pattern.compile("try again in\\s+(?:(\\d+)h)?\\s*(?:(\\d+)m(?!s))?\\s*(?:([\\d.]+)s)?",
+                Pattern.CASE_INSENSITIVE).matcher(body);
+        if (!m.find()) return -1;
+        double sec = 0;
+        if (m.group(1) != null) sec += Integer.parseInt(m.group(1)) * 3600;
+        if (m.group(2) != null) sec += Integer.parseInt(m.group(2)) * 60;
+        if (m.group(3) != null) sec += Double.parseDouble(m.group(3));
+        return sec > 0 ? (int) Math.ceil(sec) : -1;
+    }
+
+    static String waitText(int s) {
+        if (s < 90) return s + " s";
+        if (s < 5400) return Math.round(s / 60f) + " min";
+        return String.format(Locale.ROOT, "%.1f h", s / 3600f).replace(".0", "");
+    }
+
+    // La transcripción ya hecha se guarda un rato para no repetirla (ni gastar cupo de Groq) si el resto falla.
+    private static File txCache(Context c, long id) { return new File(new File(c.getCacheDir(), "ai"), "tx_" + id + ".json"); }
+
+    static void clearCache(Context c, long id) { //noinspection ResultOfMethodCallIgnored
+        txCache(c, id).delete(); }
+
+    private static boolean loadTx(File f, List<Seg> out) {
+        try {
+            if (!f.isFile() || System.currentTimeMillis() - f.lastModified() > 6 * 3600_000L) return false;
+            byte[] b = new byte[(int) f.length()];
+            try (FileInputStream in = new FileInputStream(f)) { int n = 0; while (n < b.length) { int r = in.read(b, n, b.length - n); if (r < 0) break; n += r; } }
+            JSONArray a = new JSONArray(new String(b, StandardCharsets.UTF_8));
+            for (int i = 0; i < a.length(); i++) {
+                JSONArray e = a.getJSONArray(i);
+                out.add(new Seg(e.getDouble(0), e.getDouble(1), e.getString(2)));
+            }
+            return !out.isEmpty();
+        } catch (Throwable t) { out.clear(); return false; }
+    }
+
+    private static void saveTx(File f, List<Seg> segs) {
+        try {
+            JSONArray a = new JSONArray();
+            for (Seg sg : segs) a.put(new JSONArray().put(sg.t).put(sg.e).put(sg.s));
+            //noinspection ResultOfMethodCallIgnored
+            f.getParentFile().mkdirs();
+            try (FileOutputStream o = new FileOutputStream(f)) { o.write(a.toString().getBytes(StandardCharsets.UTF_8)); }
+        } catch (Throwable ignored) { }
+    }
+
     static final class Seg {
         double t, e = -1;          // inicio y fin (segundos)
         String s;
@@ -246,7 +304,12 @@ final class Summarizer {
         boolean timed = false;
         char[] spk = null;
         try {
-            transcribeAll(plain, k, who, tmpDir, segs);
+            File txc = txCache(c, call.id);
+            if (!loadTx(txc, segs)) {
+                segs.clear();
+                transcribeAll(plain, k, who, tmpDir, segs);
+                saveTx(txc, segs);
+            }
             // Limpia alucinaciones y frases repetidas, conservando el tiempo de cada frase.
             String prev = null;
             for (Seg sg : segs) {
@@ -476,6 +539,7 @@ final class Summarizer {
 
     private static String chat(Context c, String key, String system, String user) throws Exception {
         String lastErr = "sin modelos disponibles";
+        int rateTries = 0;
         for (String model : candidateModels(c, key)) {
             boolean extras = true; // response_format / reasoning_effort
             for (int round = 0; round < 2; round++) {
@@ -507,7 +571,15 @@ final class Summarizer {
                 lastErr = brief(r.body);
                 String low = lastErr.toLowerCase(Locale.ROOT);
                 if (r.code == 401) throw new Exception("Clave de IA no válida. Revísala en Ajustes.");
-                if (r.code == 429) throw new Exception("Límite gratuito de Groq alcanzado por ahora. Prueba en unos minutos.");
+                if (r.code == 429) {
+                    int wait = retrySeconds(r.body);
+                    if (wait >= 0 && wait <= 20 && rateTries++ < 3) { // límite por minuto: espera y repite
+                        try { Thread.sleep((wait + 1) * 1000L); } catch (InterruptedException ie) { throw new Exception("Cancelado"); }
+                        round--;
+                        continue;
+                    }
+                    throw new RateLimit(wait);
+                }
                 if (r.code == 400 && extras && (low.contains("response_format") || low.contains("reasoning")
                         || low.contains("json") || low.contains("not supported"))) {
                     extras = false; // reintenta el mismo modelo sin parámetros opcionales
@@ -710,7 +782,7 @@ final class Summarizer {
         String resp = read(code < 400 ? conn.getInputStream() : conn.getErrorStream());
         conn.disconnect();
         if (code == 401) throw new Exception("Clave de IA no válida. Revísala en Ajustes.");
-        if (code == 429) throw new Exception("Límite gratuito de Groq alcanzado por ahora. Prueba en unos minutos.");
+        if (code == 429) throw new RateLimit(retrySeconds(resp));
         if (code == 413) throw new Exception("La grabación es demasiado grande para Groq.");
         if (code >= 400) throw new Exception("Error al transcribir (" + code + "): " + brief(resp));
         return resp;
