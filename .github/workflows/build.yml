@@ -125,7 +125,7 @@ jobs:
         name: Huellas SHA-256
         run: cd dist && sha256sum Acta.apk ActaConexion-Windows.zip | tee SHA256SUMS.txt
       - if: steps.d.outputs.go == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.d.outputs.tag }}
           target_commitish: ${{ github.sha }}
@@ -175,7 +175,7 @@ jobs:
           cp Acta.apk dist/Acta.apk
           cd dist && sha256sum Acta.apk ActaConexion-Windows.zip | tee SHA256SUMS.txt
       - if: steps.d.outputs.go == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.d.outputs.tag }}
           target_commitish: ${{ github.sha }}
