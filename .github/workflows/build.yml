@@ -95,7 +95,8 @@ jobs:
 
   release:
     name: Publicar versión
-    if: startsWith(github.ref, 'refs/tags/v') && needs.android.outputs.signed == 'true'
+    # Con una etiqueta v* o al subir a main una versión que aún no tenga release.
+    if: (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && needs.android.outputs.signed == 'true'
     needs: [android, pc]
     runs-on: ubuntu-latest
     permissions:
@@ -105,10 +106,29 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - name: Huellas SHA-256
+      - name: Decidir la versión a publicar
+        id: d
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          V=$("$BT/aapt2" dump badging dist/Acta.apk | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -1)
+          echo "tag=v$V" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          elif gh release view "v$V" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.d.outputs.go == 'true'
+        name: Huellas SHA-256
         run: cd dist && sha256sum Acta.apk ActaConexion-Windows.zip | tee SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+      - if: steps.d.outputs.go == 'true'
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.d.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
           files: |
             dist/Acta.apk
