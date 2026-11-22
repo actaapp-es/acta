@@ -110,12 +110,10 @@ public class ContactsWidget extends AppWidgetProvider {
             cell.setInt(R.id.cell_avatar, "setBackgroundResource", AV_BG[slot]);
             cell.setTextColor(R.id.cell_avatar, Ui.avatarFg(c, slot));
             cell.setTextViewText(R.id.cell_name, firstName(name));
-            Intent call = new Intent(c, WidgetActionActivity.class)
-                    .putExtra(WidgetActionActivity.EXTRA_ACTION, WidgetActionActivity.CALL)
-                    .putExtra("number", e[1]);
-            cell.setOnClickPendingIntent(R.id.cell, PendingIntent.getActivity(c, 7400 + id * 16 + i, call,
+            cell.setOnClickPendingIntent(R.id.cell, PendingIntent.getActivity(c, 7400 + id * 16 + i,
+                    ContactMenuActivity.intent(c, e[1], e[0]),
                     PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
-            cell.setContentDescription(R.id.cell, "Llamar a " + name);
+            cell.setContentDescription(R.id.cell, "Opciones de " + name + ": llamar, WhatsApp o historial");
             row.addView(R.id.wc_row, cell);
         }
         // Rellena la última fila para que todas las celdas tengan el mismo ancho.
@@ -140,5 +138,7 @@ public class ContactsWidget extends AppWidgetProvider {
             int[] ids = m.getAppWidgetIds(new ComponentName(c, k));
             if (ids != null) for (int id : ids) update(c, m, id);
         }
+        int[] single = m.getAppWidgetIds(new ComponentName(c, ContactSingleWidget.class));
+        if (single != null) for (int id : single) ContactSingleWidget.update(c, m, id);
     }
 }

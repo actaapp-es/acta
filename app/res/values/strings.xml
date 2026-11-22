@@ -5,5 +5,7 @@
     <string name="widget_tasks_desc">Las tareas acordadas en tus llamadas, para marcarlas como hechas.</string>
     <string name="widget_contacts_name">Contactos de Acta (4×1)</string>
     <string name="widget_contacts_large_name">Contactos de Acta (2×2)</string>
-    <string name="widget_contacts_desc">Llama con un toque a los contactos que elijas.</string>
+    <string name="widget_contacts_desc">Pulsa un contacto para llamar, escribirle por WhatsApp o ver su historial.</string>
+    <string name="widget_contact_single_name">Contacto de Acta (1×1)</string>
+    <string name="widget_contact_single_desc">Un contacto: pulsa para llamar, escribirle por WhatsApp o ver su historial.</string>
 </resources>

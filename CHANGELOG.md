@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.2.3] · 2026-11-22
+### Añadido
+- **Menú al pulsar un contacto del widget:** en vez de llamar directamente, sale un desplegable con *Llamar*, *Enviar WhatsApp* y *Ver historial* de ese contacto.
+- **Widget de contacto 1×1:** un solo contacto en una celda, con el mismo desplegable al pulsarlo.
+
 ## [5.2.2] · 2026-11-22
 ### Mejorado
 - **Límite de uso de Groq:** cuando el plan gratuito alcanza su límite, Acta lee cuánto hay que esperar, lo muestra («Reintento automático en 12 min») y vuelve a intentarlo sola, hasta 15 minutos de espera. Si Groq pide más, indica cuánto falta.

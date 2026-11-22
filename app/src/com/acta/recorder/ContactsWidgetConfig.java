@@ -38,6 +38,13 @@ public class ContactsWidgetConfig extends Activity {
     private EditText search;
     private TextView save;
 
+    /** Cuántos contactos admite el widget (1 en el widget de un solo contacto). */
+    protected int widgetIdValue() { return widgetId; }
+    protected int maxContacts() { return ContactsWidget.MAX; }
+    protected String heading() { return "Contactos del widget"; }
+    protected String hint() { return "Elige hasta " + ContactsWidget.MAX + ". Al pulsar uno eliges: llamar, WhatsApp o historial."; }
+    protected void applyWidget() { ContactsWidget.update(this, AppWidgetManager.getInstance(this), widgetId); }
+
     private int dp(float v) { return Ui.dp(this, v); }
 
     @Override
@@ -55,11 +62,11 @@ public class ContactsWidgetConfig extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(getColor(R.color.bg));
         root.setPadding(0, dp(12), 0, 0);
-        TextView title = Ui.text(this, R.style.Text_Title, "Contactos del widget");
+        TextView title = Ui.text(this, R.style.Text_Title, heading());
         title.setTextSize(26);
         title.setPadding(dp(24), dp(8), dp(24), 0);
         root.addView(title);
-        TextView sub = Ui.text(this, R.style.Text_Meta, "Elige hasta " + ContactsWidget.MAX + ". Un toque en el widget y llamas.");
+        TextView sub = Ui.text(this, R.style.Text_Meta, hint());
         sub.setTextSize(14.5f);
         sub.setPadding(dp(24), dp(6), dp(24), dp(12));
         root.addView(sub);
@@ -183,8 +190,9 @@ public class ContactsWidgetConfig extends Activity {
             row.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     if (chosen.containsKey(e[1])) chosen.remove(e[1]);
-                    else if (chosen.size() >= ContactsWidget.MAX) {
-                        Toast.makeText(ContactsWidgetConfig.this, "Máximo " + ContactsWidget.MAX + " contactos.", Toast.LENGTH_SHORT).show();
+                    else if (maxContacts() == 1) { chosen.clear(); chosen.put(e[1], e); }
+                    else if (chosen.size() >= maxContacts()) {
+                        Toast.makeText(ContactsWidgetConfig.this, "Máximo " + maxContacts() + " contactos.", Toast.LENGTH_SHORT).show();
                         return;
                     } else chosen.put(e[1], e);
                     render();
@@ -202,7 +210,7 @@ public class ContactsWidgetConfig extends Activity {
 
     private void done() {
         ContactsWidget.save(this, widgetId, new ArrayList<>(chosen.values()));
-        ContactsWidget.update(this, AppWidgetManager.getInstance(this), widgetId);
+        applyWidget();
         setResult(RESULT_OK, new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId));
         finish();
     }
