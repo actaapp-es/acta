@@ -18,9 +18,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.speech.RecognitionListener;
-import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.widget.Toast;
@@ -54,11 +51,10 @@ public class VoiceService extends Service {
     static volatile boolean running;
 
     private final Handler main = new Handler(Looper.getMainLooper());
-    private SpeechRecognizer rec;
     private TextToSpeech tts;
     private boolean ttsReady;
     private volatile boolean busy;      // procesando una orden
-    private boolean stopped, listening, once;
+    private boolean stopped, once;
     private final Runnable restart = new Runnable() { @Override public void run() { startWake(); } };
     private android.content.BroadcastReceiver screenRx;
 
@@ -143,7 +139,7 @@ public class VoiceService extends Service {
         if (!listen && !enabled(this)) { stopSelf(); return START_NOT_STICKY; } // sin escucha continua: solo bajo demanda
         if (listen) {
             main.post(new Runnable() { @Override public void run() { if (!busy) { destroyRec(); beepAndCapture(true); } } });
-        } else if (rec == null && !busy) {
+        } else if (det == null && !busy) {
             main.post(new Runnable() { @Override public void run() { startWake(); } });
         }
         return START_STICKY;
@@ -194,116 +190,172 @@ public class VoiceService extends Service {
         }
     }
 
-    // ------------------------------------------------------------------ Escucha de «Hola Acta»
+    // ------------------------------------------------------------------ Escucha de «Hola Acta» (local, con tu voz)
 
     private boolean inCall() { return !CallManager.calls.isEmpty(); }
 
+    private volatile Thread det;
+    private volatile boolean detStop;
+
     private void startWake() {
-        if (stopped || busy || listening) return;
+        if (stopped || busy || det != null) return;
         if (!screenOk()) return; // se reanuda al encender la pantalla
-        if (inCall()) { main.postDelayed(new Runnable() { @Override public void run() { startWake(); } }, 3000); return; }
-        try {
-            if (rec == null) {
-                if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(this))
-                    rec = SpeechRecognizer.createOnDeviceSpeechRecognizer(this);
-                else if (SpeechRecognizer.isRecognitionAvailable(this))
-                    rec = SpeechRecognizer.createSpeechRecognizer(this);
-                else {
-                    // Sin reconocimiento de voz: solo funciona el botón «Hablar ahora» del aviso.
-                    startFg("Tu móvil no tiene reconocimiento de voz instalado. Usa «Hablar ahora».");
-                    return;
-                }
-                rec.setRecognitionListener(listener);
-            }
-            Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                    .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                    .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES")
-                    .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                    .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-                    .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-                    .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
-            listening = true;
-            rec.startListening(i);
-        } catch (Throwable t) {
-            destroyRec();
-            retryLater(2000);
+        if (inCall()) { main.postDelayed(restart, 3000); return; }
+        if (!WakeWord.enrolled(this)) {
+            startFg("Falta grabar tu voz: Ajustes → Agente de voz → «Grabar mi voz». Mientras tanto, usa «Hablar ahora».");
+            return;
         }
+        detStop = false;
+        Thread t = new Thread(new Runnable() { @Override public void run() { detectLoop(); } }, "acta-wake");
+        det = t;
+        t.start();
+    }
+
+    private void stopDetector() {
+        detStop = true;
+        Thread t = det;
+        if (t != null && t != Thread.currentThread()) { try { t.join(1500); } catch (InterruptedException ignored) { } }
+        if (det == t) det = null;
     }
 
     private void retryLater(long ms) {
         if (stopped) return;
-        main.removeCallbacks(restart);          // un solo reinicio pendiente: sin ráfagas que abran y cierren el micro
-        main.postDelayed(restart, Math.max(ms, 700));
+        main.removeCallbacks(restart);
+        main.postDelayed(restart, Math.max(ms, 300));
     }
 
-    private void destroyRec() {
-        listening = false;
-        if (rec != null) {
-            try { rec.cancel(); } catch (Throwable ignored) { }
-            try { rec.destroy(); } catch (Throwable ignored) { }
-            rec = null;
+    private void destroyRec() { stopDetector(); }
+
+    /** Un único flujo de micrófono, estable. Detecta voz, compara con tu plantilla y, si encaja, recoge la frase entera. */
+    private void detectLoop() {
+        final int hop = WakeWord.HOP;
+        int min = AudioRecord.getMinBufferSize(WakeWord.RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        AudioRecord ar = null;
+        try {
+            ar = new AudioRecord(MediaRecorder.AudioSource.MIC, WakeWord.RATE, AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT, Math.max(min, WakeWord.RATE * 2));
+            if (ar.getState() != AudioRecord.STATE_INITIALIZED) { ar.release(); ar = null; det = null; retryLater(5000); return; }
+            ar.startRecording();
+            java.util.List<float[][]> templates = WakeWord.load(this);
+            double thr = WakeWord.threshold(this);
+            short[] buf = new short[hop];
+            short[] pre = new short[hop * 20];      // 200 ms previos al inicio de la voz
+            int preFill = 0;
+            short[] seg = new short[WakeWord.RATE * 12];
+            int segLen = 0;
+            double floor = -1;
+            int voiceRun = 0, silence = 0;
+            int state = 0;                          // 0 reposo, 1 posible frase, 2 capturando orden, 3 descartando
+            long lastTry = 0;
+            while (!detStop && !stopped) {
+                int n = ar.read(buf, 0, hop);
+                if (n < hop) { if (n < 0) break; continue; }
+                double r = WakeWord.rms(buf, 0, hop);
+                if (floor < 0) floor = r;
+                boolean voice = r > Math.max(550, floor * 2.8);
+                if (state == 0) {
+                    floor = floor * 0.97 + r * 0.03;
+                    // anillo de pre-roll
+                    System.arraycopy(pre, hop, pre, 0, pre.length - hop);
+                    System.arraycopy(buf, 0, pre, pre.length - hop, hop);
+                    preFill = Math.min(pre.length, preFill + hop);
+                    voiceRun = voice ? voiceRun + 1 : 0;
+                    if (voiceRun >= 2) {
+                        segLen = 0;
+                        System.arraycopy(pre, pre.length - preFill, seg, 0, preFill);
+                        segLen = preFill;
+                        state = 1; silence = 0; lastTry = 0;
+                    }
+                    continue;
+                }
+                if (segLen + hop <= seg.length) { System.arraycopy(buf, 0, seg, segLen, hop); segLen += hop; }
+                silence = voice ? 0 : silence + 1;
+                if (state == 1) {
+                    int hops = segLen / hop;
+                    boolean timeToTry = hops >= 45 && hops <= 230 && (hops - lastTry >= 8 || silence >= 30);
+                    if (timeToTry) {
+                        lastTry = hops;
+                        float[][] f = WakeWord.features(seg, segLen);
+                        if (WakeWord.score(templates, f) < thr) { state = 2; silence = voice ? 0 : silence; }
+                    }
+                    if (state == 1) {
+                        if (hops > 230) state = 3;
+                        else if (silence >= 30) { state = 0; preFill = 0; voiceRun = 0; }
+                    }
+                } else if (state == 3) {
+                    if (silence >= 30) { state = 0; preFill = 0; voiceRun = 0; }
+                }
+                if (state == 2) {
+                    // Frase entera: hasta ~0,9 s de silencio o 10 s en total
+                    if (silence >= 90 || segLen >= WakeWord.RATE * 10) {
+                        final short[] clip = java.util.Arrays.copyOf(seg, segLen);
+                        ar.stop(); ar.release(); ar = null;
+                        det = null;
+                        onCandidate(clip);
+                        return;
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            // el micrófono lo tiene otra app, p. ej.: reintenta más tarde
+            det = null;
+            retryLater(5000);
+        } finally {
+            if (ar != null) { try { ar.stop(); } catch (Throwable ignored) { } try { ar.release(); } catch (Throwable ignored) { } }
+            if (det == Thread.currentThread()) det = null;
         }
     }
 
-    private final RecognitionListener listener = new RecognitionListener() {
-        @Override public void onReadyForSpeech(Bundle b) { errors = 0; }
-        @Override public void onBeginningOfSpeech() { }
-        @Override public void onRmsChanged(float v) { }
-        @Override public void onBufferReceived(byte[] b) { }
-        @Override public void onEndOfSpeech() { }
-        @Override public void onEvent(int t, Bundle b) { }
+    private long verifyWindowStart;
+    private int verifyCount;
 
-        @Override public void onPartialResults(Bundle b) { }
-
-        @Override
-        public void onResults(Bundle b) {
-            listening = false;
-            if (busy) return;
-            // Solo vale la frase COMPLETA, al principio de lo que se dijo, y solo la mejor transcripción.
-            ArrayList<String> all = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-            if (all == null || all.isEmpty()) { retryLater(250); return; }
-            Matcher m = WAKE.matcher(all.get(0).trim());
-            if (!m.find()) { retryLater(250); return; }
-            float[] conf = b.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES);
-            if (conf != null && conf.length > 0 && conf[0] >= 0 && conf[0] < MIN_CONFIDENCE) { retryLater(250); return; }
-            onWakeWord(m.group(1).trim());
+    /** Coincidencia local: Groq confirma que de verdad dice «Hola Acta» antes de hacer nada. */
+    private void onCandidate(final short[] clip) {
+        main.post(new Runnable() { @Override public void run() { busy = true; } });
+        // Tope por hora de confirmaciones, para no gastar la cuota de Groq con falsas coincidencias.
+        long now = System.currentTimeMillis();
+        if (now - verifyWindowStart > 3_600_000L) { verifyWindowStart = now; verifyCount = 0; }
+        if (++verifyCount > 40) { resumeQuiet(); return; }
+        File wav = new File(getCacheDir(), "voice_wake.wav");
+        try {
+            writeWav(wav, clip);
+            String text = VoiceAgent.transcribe(this, wav, "Conversación en español con un teléfono móvil.");
+            //noinspection ResultOfMethodCallIgnored
+            wav.delete();
+            Matcher m = WAKE.matcher(text == null ? "" : text.trim());
+            if (!m.find()) { resumeQuiet(); return; }          // falsa alarma: ni un ruido
+            String rest = m.group(1).trim();
+            if (rest.split("\\s+").length >= 2 && !rest.isEmpty()) {
+                work(rest, null, false);
+            } else {
+                main.post(new Runnable() { @Override public void run() { beepAndCapture(false); } });
+            }
+        } catch (Throwable t) {
+            //noinspection ResultOfMethodCallIgnored
+            wav.delete();
+            resumeQuiet();
         }
+    }
 
-        @Override
-        public void onError(int code) {
-            listening = false;
-            if (busy) return;
-            if (code == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { stopSelf(); return; }
-            // Silencio o sin coincidencia: lo normal. Otros errores: recrea el reconocedor con espera creciente.
-            if (code == SpeechRecognizer.ERROR_NO_MATCH || code == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) { retryLater(200); return; }
-            destroyRec();
-            errors++;
-            retryLater(Math.min(30000, 1000L * (1L << Math.min(errors, 5))));
+    private void resumeQuiet() {
+        main.post(new Runnable() { @Override public void run() { busy = false; retryLater(1500); } });
+    }
+
+    private static void writeWav(File f, short[] pcm) throws Exception {
+        try (FileOutputStream fo = new FileOutputStream(f)) {
+            fo.write(new byte[44]);
+            byte[] b = new byte[pcm.length * 2];
+            for (int i = 0; i < pcm.length; i++) { b[2 * i] = (byte) pcm[i]; b[2 * i + 1] = (byte) (pcm[i] >> 8); }
+            fo.write(b);
         }
-    };
-
-    private static String best(Bundle b) {
-        ArrayList<String> l = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        return l == null || l.isEmpty() ? null : l.get(0);
+        writeWavHeader(f, pcm.length * 2L, WakeWord.RATE);
     }
 
     // ------------------------------------------------------------------ Orden
 
-    /** Se oyó «Hola Acta». Si la orden venía en la misma frase se usa; si no, se graba y transcribe con Groq. */
-    private void onWakeWord(String rest) {
-        if (busy) return;
-        busy = true;
-        destroyRec();
-        if (rest.trim().split("\\s+").length >= 2 && !rest.trim().isEmpty()) {
-            final String said = rest.trim();
-            work(said, null, false);
-        } else {
-            beepAndCapture(false);
-        }
-    }
-
     private void beepAndCapture(final boolean manual) {
         busy = true;
+        stopDetector();
         beep(ToneGenerator.TONE_PROP_BEEP);
         startFg("Te escucho…");
         new Thread(new Runnable() {
@@ -325,7 +377,7 @@ public class VoiceService extends Service {
                     if (text == null) {
                         if (wav == null) { speakThenResume(manual ? "No te he oído." : null); return; }
                         startFg("Entendiendo lo que has dicho…");
-                        text = VoiceAgent.transcribe(VoiceService.this, wav);
+                        text = VoiceAgent.transcribe(VoiceService.this, wav, null);
                         //noinspection ResultOfMethodCallIgnored
                         wav.delete();
                     }

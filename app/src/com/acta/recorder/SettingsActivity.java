@@ -26,7 +26,7 @@ import java.util.List;
 public class SettingsActivity extends Activity {
 
     private LinearLayout content;
-    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowVoice, rowVoiceScreen, rowVoiceTry, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
+    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowVoice, rowVoiceEnroll, rowVoiceScreen, rowVoiceTry, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
     private boolean xiaomiMode;
 
     private LinearLayout group;
@@ -196,6 +196,11 @@ public class SettingsActivity extends Activity {
         if (rowDialer != null) status(rowDialer, Util.isDefaultDialer(this) ? "Activa" : "Establecer", Util.isDefaultDialer(this));
         refreshNative();
         if (rowVoice != null) toggle(rowVoice, VoiceService.enabled(this));
+        if (rowVoiceEnroll != null) {
+            TextView ev = rowVoiceEnroll.findViewById(R.id.value);
+            ev.setText(WakeWord.enrolled(this) ? "Grabada" : "Pendiente");
+            ev.setTextColor(getColor(WakeWord.enrolled(this) ? R.color.ok : R.color.accent));
+        }
         if (rowVoiceScreen != null) toggle(rowVoiceScreen, VoiceService.screenOnly(this));
         refreshCalls();
         refreshQuick();
@@ -626,9 +631,12 @@ public class SettingsActivity extends Activity {
 
     private void buildVoiceSection() {
         section("Agente de voz");
-        rowVoice = row("Escucha continua «Hola Acta» (experimental)",
-                "Mantiene el micrófono abierto para oír «Hola Acta». Android muestra el indicador del micrófono y puede abrirlo y cerrarlo de vez en cuando; gasta batería. "
-                        + "La frase se detecta en el móvil; solo después se envía tu orden a Groq. Si prefieres no tener el micrófono activo, usa el mosaico «Hablar con Acta» de ajustes rápidos o el acceso directo del icono.",
+        rowVoiceEnroll = row("Grabar mi voz para «Hola Acta»",
+                "Dices la frase 5 veces y el móvil aprende a reconocerla con tu voz, sin conexión y sin pitidos. Necesario para la escucha continua.",
+                new Click() { @Override void on() { startActivity(new Intent(SettingsActivity.this, WakeEnrollActivity.class)); } });
+        rowVoice = row("Escucha continua «Hola Acta»",
+                "Mantiene el micrófono abierto, de forma estable y sin pitidos, para oír «Hola Acta» con tu voz. Android muestra el indicador del micrófono y se gasta algo de batería. "
+                        + "La frase se detecta en el móvil; solo cuando encaja, un fragmento corto se envía a Groq para confirmarla antes de hacer nada. Sin escucha continua puedes usar el mosaico «Hablar con Acta» de ajustes rápidos.",
                 new Click() {
                     @Override void on() {
                         if (VoiceService.enabled(SettingsActivity.this)) {
@@ -638,6 +646,11 @@ public class SettingsActivity extends Activity {
                         }
                         if (!Summarizer.hasKey(SettingsActivity.this)) {
                             Toast.makeText(SettingsActivity.this, "Primero añade tu clave de Groq en Ajustes.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        if (!WakeWord.enrolled(SettingsActivity.this)) {
+                            Toast.makeText(SettingsActivity.this, "Primero graba tu voz diciendo «Hola Acta».", Toast.LENGTH_LONG).show();
+                            startActivity(new Intent(SettingsActivity.this, WakeEnrollActivity.class));
                             return;
                         }
                         java.util.List<String> need = new java.util.ArrayList<>();

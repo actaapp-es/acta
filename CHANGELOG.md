@@ -2,6 +2,13 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.7.0] · 2026-11-23
+### Cambiado
+- **«Hola Acta» sin pitidos ni micrófono parpadeando.** La escucha continua ya no usa el reconocedor de voz de Android (que pita y se reinicia cada pocos segundos). Ahora mantiene un único flujo de micrófono, estable, y reconoce la frase en el propio móvil comparándola con **tu voz**.
+### Añadido
+- **Grabar mi voz** (Ajustes → Agente de voz): dices «Hola Acta» 5 veces y el móvil aprende a reconocerla, sin conexión. Hace falta antes de activar la escucha continua.
+- Cuando la frase encaja, un fragmento corto se envía a Groq para confirmar que de verdad dice «Hola Acta» antes de hacer nada (límite de 40 confirmaciones por hora). Si no lo confirma, no pasa nada.
+
 ## [5.6.0] · 2026-11-23
 ### Cambiado
 - **El micrófono ya no se queda escuchando de fondo por defecto.** La escucha continua de «Hola Acta» pasa a ser opcional y experimental (Ajustes → Agente de voz), porque con el reconocimiento de voz de Android el micrófono se abre y se cierra cada pocos segundos.

@@ -240,11 +240,11 @@ final class VoiceAgent {
 
     // ------------------------------------------------------------------ Transcripción del comando
 
-    static String transcribe(Context c, File wav) throws Exception {
+    static String transcribe(Context c, File wav, String hint) throws Exception {
         String key = Summarizer.key(c);
         if (key.isEmpty()) throw new Exception("Falta la clave de Groq");
         String resp = Summarizer.transcribeRaw(wav, key,
-                "Orden de voz a un teléfono: llama a, guarda el contacto, programa una llamada dentro de dos horas. "
+                hint != null ? hint : "Orden de voz a un teléfono: llama a, guarda el contacto, programa una llamada dentro de dos horas. "
                         + "Nombres propios y números de teléfono.", "audio/wav", "json");
         return new JSONObject(resp).optString("text", "").trim();
     }
