@@ -26,7 +26,7 @@ import java.util.List;
 public class SettingsActivity extends Activity {
 
     private LinearLayout content;
-    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
+    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowVoice, rowVoiceTry, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
     private boolean xiaomiMode;
 
     private LinearLayout group;
@@ -92,6 +92,7 @@ public class SettingsActivity extends Activity {
         buildPrivacySection();
         buildQuickSection();
         buildCallsSection();
+        buildVoiceSection();
         if (SimInfo.dual(this)) buildSimSection();
         buildAppearanceSection();
 
@@ -174,6 +175,12 @@ public class SettingsActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int rc, String[] p, int[] g) {
+        if (rc == 90) {
+            if (Util.has(this, android.Manifest.permission.RECORD_AUDIO)) VoiceService.setEnabled(this, true);
+            else Toast.makeText(this, "Sin permiso de micrófono el agente de voz no puede escuchar.", Toast.LENGTH_LONG).show();
+            refresh();
+            return;
+        }
         refresh();
         if (!Util.allGranted(this)) {
             boolean canAsk = false;
@@ -188,6 +195,7 @@ public class SettingsActivity extends Activity {
                 Util.allGranted(this));
         if (rowDialer != null) status(rowDialer, Util.isDefaultDialer(this) ? "Activa" : "Establecer", Util.isDefaultDialer(this));
         refreshNative();
+        if (rowVoice != null) toggle(rowVoice, VoiceService.enabled(this));
         refreshCalls();
         refreshQuick();
         refreshAi();
@@ -609,6 +617,48 @@ public class SettingsActivity extends Activity {
                         })
                         .setNegativeButton("Cancelar", null)
                         .show();
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------- Agente de voz
+
+    private void buildVoiceSection() {
+        section("Agente de voz");
+        rowVoice = row("Hola Acta",
+                "Di «Hola Acta» sin abrir la app y pide: llamar a un contacto, guardar un contacto o programar una llamada dentro de unas horas. "
+                        + "La frase de activación se detecta en el móvil; solo después de oírla se envía tu orden a Groq. Muestra un aviso fijo y gasta algo de batería.",
+                new Click() {
+                    @Override void on() {
+                        if (VoiceService.enabled(SettingsActivity.this)) {
+                            VoiceService.setEnabled(SettingsActivity.this, false);
+                            refresh();
+                            return;
+                        }
+                        if (!Summarizer.hasKey(SettingsActivity.this)) {
+                            Toast.makeText(SettingsActivity.this, "Primero añade tu clave de Groq en Ajustes.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        java.util.List<String> need = new java.util.ArrayList<>();
+                        for (String perm : new String[]{android.Manifest.permission.RECORD_AUDIO, android.Manifest.permission.READ_CONTACTS,
+                                android.Manifest.permission.WRITE_CONTACTS, android.Manifest.permission.CALL_PHONE})
+                            if (!Util.has(SettingsActivity.this, perm)) need.add(perm);
+                        if (android.os.Build.VERSION.SDK_INT >= 33 && !Util.has(SettingsActivity.this, android.Manifest.permission.POST_NOTIFICATIONS))
+                            need.add(android.Manifest.permission.POST_NOTIFICATIONS);
+                        if (!need.isEmpty()) { requestPermissions(need.toArray(new String[0]), 90); return; }
+                        VoiceService.setEnabled(SettingsActivity.this, true);
+                        refresh();
+                    }
+                });
+        rowVoiceTry = row("Probar ahora", "Habla sin decir «Hola Acta»: pulsa y pide algo.", new Click() {
+            @Override void on() {
+                if (!Summarizer.hasKey(SettingsActivity.this)) {
+                    Toast.makeText(SettingsActivity.this, "Primero añade tu clave de Groq en Ajustes.", Toast.LENGTH_LONG).show();
+                } else if (!Util.has(SettingsActivity.this, android.Manifest.permission.RECORD_AUDIO)) {
+                    requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, 91);
+                } else {
+                    VoiceService.listenNow(SettingsActivity.this);
+                }
             }
         });
     }

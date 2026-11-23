@@ -2,6 +2,12 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.5.0] · 2026-11-23
+### Añadido
+- **Agente de voz «Hola Acta»** (Ajustes → Agente de voz): sin abrir la app, di «Hola Acta» y pide *llama a…*, *guarda a… con el número…* o *avísame para llamar a… dentro de X horas*. La frase de activación se detecta en el propio móvil con el reconocimiento de voz del sistema; solo después de oírla se envía tu orden (audio o texto) a Groq, que entiende la intención y Acta la ejecuta. Responde en voz alta. Incluye *Probar ahora* y un botón *Hablar ahora* en el aviso fijo, para pedir algo sin decir la frase.
+- Necesita tu clave de Groq y los permisos de micrófono, contactos (leer y guardar) y teléfono. Mientras estás en una llamada se pausa.
+- Tras reiniciar el móvil, Android 14 o superior puede impedir que arranque solo: se reanuda al abrir Acta.
+
 ## [5.4.0] · 2026-11-23
 ### Añadido
 - **Control de llamadas perdidas:** al perder una llamada llega un aviso con *Llamar*, *En 15 min* y *Más* (llamar, WhatsApp o historial). En Recientes aparece un aviso fijo con los números que te llamaron y aún no has devuelto, y una pantalla con todos (últimos 14 días) para llamar, escribir por WhatsApp, programar o descartar. Dejan de estar pendientes en cuanto hablas con esa persona. Se puede desactivar en Ajustes → Llamadas y spam.

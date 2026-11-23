@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  */
 final class Summarizer {
 
-    private static final String BASE = "https://api.groq.com/openai/v1";
+    static final String BASE = "https://api.groq.com/openai/v1";
     private static final String TRANSCRIBE_MODEL = "whisper-large-v3";
     /** Preferencia de modelos de texto (se cruza con los disponibles en la cuenta). */
     private static final String[] PREFERRED = {
@@ -537,7 +537,7 @@ final class Summarizer {
 
     // ------------------------------------------------------------------ Chat con elección de modelo
 
-    private static String chat(Context c, String key, String system, String user) throws Exception {
+    static String chat(Context c, String key, String system, String user) throws Exception {
         String lastErr = "sin modelos disponibles";
         int rateTries = 0;
         for (String model : candidateModels(c, key)) {
@@ -745,7 +745,7 @@ final class Summarizer {
         }
     }
 
-    private static String transcribeRaw(File audio, String key, String hint, String mime, String format) throws Exception {
+    static String transcribeRaw(File audio, String key, String hint, String mime, String format) throws Exception {
         String boundary = "----acta" + System.currentTimeMillis();
         ByteArrayOutputStream pre = new ByteArrayOutputStream();
         field(pre, boundary, "model", TRANSCRIBE_MODEL);
@@ -819,7 +819,7 @@ final class Summarizer {
 
     // ------------------------------------------------------------------ HTTP
 
-    private static final class Http { int code; String body; }
+    static final class Http { int code; String body; }
 
     private static Http post(String url, String key, String json) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();

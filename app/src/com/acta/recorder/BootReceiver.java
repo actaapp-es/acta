@@ -13,6 +13,7 @@ public class BootReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)
                 || "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED".equals(a)) {
             QuickActions.rescheduleAll(c);
+            if (VoiceService.enabled(c)) VoiceService.start(c); // Android 14+ puede negarlo: se reanuda al abrir Acta
             Cleanup.schedule(c);
         }
         if (Intent.ACTION_BOOT_COMPLETED.equals(a) && Util.nativeAdbEnabled(c) && NativeAdbManager.savedPort(c) != 0) {

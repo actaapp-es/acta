@@ -190,6 +190,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         watchContacts();
+        if (VoiceService.enabled(this) && !VoiceService.running && Util.has(this, Manifest.permission.RECORD_AUDIO)) VoiceService.start(this);
         if (themeSeen != Ui.themeGen) { recreate(); return; }
         // Sin bloqueos: la app se abre siempre. Los permisos y la configuración de las dos voces
         // se ofrecen en el aviso de arriba, cuando el usuario quiera.
