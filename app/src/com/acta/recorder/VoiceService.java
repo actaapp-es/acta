@@ -58,7 +58,17 @@ public class VoiceService extends Service {
     private TextToSpeech tts;
     private boolean ttsReady;
     private volatile boolean busy;      // procesando una orden
-    private boolean stopped;
+    private boolean stopped, listening;
+    private final Runnable restart = new Runnable() { @Override public void run() { startWake(); } };
+    private android.content.BroadcastReceiver screenRx;
+
+    static boolean screenOnly(Context c) { return Util.prefs(c).getBoolean("voice_screen_only", true); }
+
+    private boolean screenOk() {
+        if (!screenOnly(this)) return true;
+        android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
+        return pm == null || pm.isInteractive();
+    }
     private int errors;
     private final java.util.Map<String, Runnable> speakDone = new java.util.HashMap<>();
 
@@ -91,6 +101,18 @@ public class VoiceService extends Service {
     public void onCreate() {
         super.onCreate();
         running = true;
+        screenRx = new android.content.BroadcastReceiver() {
+            @Override public void onReceive(Context c, Intent i) {
+                if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
+                    if (screenOnly(c) && !busy) { main.removeCallbacks(restart); destroyRec(); } // micrófono libre con la pantalla apagada
+                } else {
+                    retryLater(300);
+                }
+            }
+        };
+        android.content.IntentFilter f = new android.content.IntentFilter(Intent.ACTION_SCREEN_OFF);
+        f.addAction(Intent.ACTION_SCREEN_ON);
+        registerReceiver(screenRx, f);
         tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override public void onInit(int status) {
                 if (status != TextToSpeech.SUCCESS) return;
@@ -130,6 +152,7 @@ public class VoiceService extends Service {
         stopped = true;
         main.removeCallbacksAndMessages(null);
         destroyRec();
+        try { unregisterReceiver(screenRx); } catch (Throwable ignored) { }
         if (tts != null) { try { tts.shutdown(); } catch (Throwable ignored) { } }
         super.onDestroy();
     }
@@ -173,7 +196,8 @@ public class VoiceService extends Service {
     private boolean inCall() { return !CallManager.calls.isEmpty(); }
 
     private void startWake() {
-        if (stopped || busy) return;
+        if (stopped || busy || listening) return;
+        if (!screenOk()) return; // se reanuda al encender la pantalla
         if (inCall()) { main.postDelayed(new Runnable() { @Override public void run() { startWake(); } }, 3000); return; }
         try {
             if (rec == null) {
@@ -195,6 +219,7 @@ public class VoiceService extends Service {
                     .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
                     .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                     .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
+            listening = true;
             rec.startListening(i);
         } catch (Throwable t) {
             destroyRec();
@@ -204,10 +229,12 @@ public class VoiceService extends Service {
 
     private void retryLater(long ms) {
         if (stopped) return;
-        main.postDelayed(new Runnable() { @Override public void run() { startWake(); } }, ms);
+        main.removeCallbacks(restart);          // un solo reinicio pendiente: sin ráfagas que abran y cierren el micro
+        main.postDelayed(restart, Math.max(ms, 700));
     }
 
     private void destroyRec() {
+        listening = false;
         if (rec != null) {
             try { rec.cancel(); } catch (Throwable ignored) { }
             try { rec.destroy(); } catch (Throwable ignored) { }
@@ -227,6 +254,7 @@ public class VoiceService extends Service {
 
         @Override
         public void onResults(Bundle b) {
+            listening = false;
             if (busy) return;
             // Solo vale la frase COMPLETA, al principio de lo que se dijo, y solo la mejor transcripción.
             ArrayList<String> all = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
@@ -240,6 +268,7 @@ public class VoiceService extends Service {
 
         @Override
         public void onError(int code) {
+            listening = false;
             if (busy) return;
             if (code == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { stopSelf(); return; }
             // Silencio o sin coincidencia: lo normal. Otros errores: recrea el reconocedor con espera creciente.

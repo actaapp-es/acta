@@ -2,6 +2,12 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.5.2] · 2026-11-23
+### Corregido
+- **El micrófono ya no se abre y se cierra sin parar.** Los reinicios de la escucha podían encadenarse en ráfagas; ahora hay un único reinicio pendiente y un mínimo de espera entre uno y otro.
+### Añadido
+- **Escuchar solo con la pantalla encendida** (activado por defecto, en Ajustes → Agente de voz): con la pantalla apagada el micrófono queda libre y se gasta menos batería. Se puede desactivar para llamar con el móvil bloqueado.
+
 ## [5.5.1] · 2026-11-23
 ### Corregido
 - **«Hola Acta» ya no se activa solo.** Ahora solo vale la frase completa «Hola Acta» al principio de lo que se dice y con confianza suficiente del reconocedor (antes bastaba un fragmento parcial o una variante parecida). Si no se oye una orden después, no hace ruido ni da ningún aviso.

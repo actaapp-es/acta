@@ -26,7 +26,7 @@ import java.util.List;
 public class SettingsActivity extends Activity {
 
     private LinearLayout content;
-    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowVoice, rowVoiceTry, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
+    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowVoice, rowVoiceScreen, rowVoiceTry, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
     private boolean xiaomiMode;
 
     private LinearLayout group;
@@ -196,6 +196,7 @@ public class SettingsActivity extends Activity {
         if (rowDialer != null) status(rowDialer, Util.isDefaultDialer(this) ? "Activa" : "Establecer", Util.isDefaultDialer(this));
         refreshNative();
         if (rowVoice != null) toggle(rowVoice, VoiceService.enabled(this));
+        if (rowVoiceScreen != null) toggle(rowVoiceScreen, VoiceService.screenOnly(this));
         refreshCalls();
         refreshQuick();
         refreshAi();
@@ -647,6 +648,15 @@ public class SettingsActivity extends Activity {
                             need.add(android.Manifest.permission.POST_NOTIFICATIONS);
                         if (!need.isEmpty()) { requestPermissions(need.toArray(new String[0]), 90); return; }
                         VoiceService.setEnabled(SettingsActivity.this, true);
+                        refresh();
+                    }
+                });
+        rowVoiceScreen = row("Escuchar solo con la pantalla encendida",
+                "Recomendado: con la pantalla apagada el micrófono queda libre y se gasta menos batería. Desactívalo si quieres llamar con el móvil bloqueado.",
+                new Click() {
+                    @Override void on() {
+                        Util.prefs(SettingsActivity.this).edit().putBoolean("voice_screen_only", !VoiceService.screenOnly(SettingsActivity.this)).apply();
+                        if (VoiceService.enabled(SettingsActivity.this)) VoiceService.start(SettingsActivity.this);
                         refresh();
                     }
                 });
