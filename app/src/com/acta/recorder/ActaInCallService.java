@@ -58,9 +58,27 @@ public class ActaInCallService extends InCallService {
         } catch (Exception ignored) { }
     }
 
+    private final java.util.Set<Call> answered = new java.util.HashSet<>();
+    private final java.util.Set<Call> missedDone = new java.util.HashSet<>();
+
+    /** Llamada entrante que sonó y no se contestó: la anota y avisa para devolverla. */
+    private void checkMissed(Call call) {
+        try {
+            if (!CallManager.incoming(call) || answered.contains(call) || !missedDone.add(call)) return;
+            android.telecom.DisconnectCause dc = call.getDetails().getDisconnectCause();
+            if (dc == null || dc.getCode() != android.telecom.DisconnectCause.MISSED) return;
+            MissedCalls.onMissed(this, CallManager.number(call), System.currentTimeMillis());
+        } catch (Throwable ignored) { }
+    }
+
     private final Call.Callback callback = new Call.Callback() {
         @Override
         public void onStateChanged(Call call, int state) {
+            if (state == Call.STATE_ACTIVE) {
+                answered.add(call);
+                if (CallManager.incoming(call)) MissedCalls.cancel(ActaInCallService.this, CallManager.number(call));
+            }
+            if (state == Call.STATE_DISCONNECTED) checkMissed(call);
             if (state == Call.STATE_ACTIVE || state == Call.STATE_DIALING) {
                 try { SimInfo.learn(ActaInCallService.this, CallManager.number(call), call.getDetails().getAccountHandle()); }
                 catch (Throwable ignored) { }
@@ -115,6 +133,8 @@ public class ActaInCallService extends InCallService {
             }
         }
         CallManager.calls.add(call);
+        // Si devuelves la llamada (o llamas a ese número), deja de estar pendiente.
+        if (!CallManager.incoming(call)) MissedCalls.cancel(this, CallManager.number(call));
         call.registerCallback(callback);
         if (call.getState() == Call.STATE_SELECT_PHONE_ACCOUNT) autoSelectSim(call);
         // Pre-conexión insistente durante el tono: deja el ADB listo antes de descolgar,
@@ -141,6 +161,9 @@ public class ActaInCallService extends InCallService {
 
     @Override
     public void onCallRemoved(Call call) {
+        checkMissed(call);
+        answered.remove(call);
+        missedDone.remove(call);
         finishRecording(call);
         call.unregisterCallback(callback);
         CallManager.calls.remove(call);

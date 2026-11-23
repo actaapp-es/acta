@@ -26,7 +26,7 @@ import java.util.List;
 public class SettingsActivity extends Activity {
 
     private LinearLayout content;
-    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
+    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
     private boolean xiaomiMode;
 
     private LinearLayout group;
@@ -626,6 +626,17 @@ public class SettingsActivity extends Activity {
                         refresh();
                     }
                 });
+        rowMissedNotify = row("Avisar de llamadas perdidas",
+                "Notificación al perder una llamada, con botones para devolverla o recordártelo en 15 minutos.",
+                new Click() {
+                    @Override void on() {
+                        Util.prefs(SettingsActivity.this).edit().putBoolean("missed_notify", !MissedCalls.notifyEnabled(SettingsActivity.this)).apply();
+                        refresh();
+                    }
+                });
+        rowMissedList = row("Llamadas perdidas", "Las que aún no has devuelto. Toca para verlas.", new Click() {
+            @Override void on() { startActivity(new Intent(SettingsActivity.this, MissedCallsActivity.class)); }
+        });
         rowSpam = row("Papelera de spam", "Números bloqueados y llamadas rechazadas.", new Click() {
             @Override void on() { startActivity(new Intent(SettingsActivity.this, SpamActivity.class)); }
         });
@@ -639,6 +650,7 @@ public class SettingsActivity extends Activity {
     private void refreshCalls() {
         if (rowHideId == null) return;
         toggle(rowHideId, Util.hideCallerId(this));
+        toggle(rowMissedNotify, MissedCalls.notifyEnabled(this));
         int blocked = Util.spamSet(this).size();
         int rejected = Db.get(this).spamCount();
         TextView v = rowSpam.findViewById(R.id.value);

@@ -64,6 +64,8 @@ public class MainActivity extends Activity {
     }
 
     private final List<Object> recents = new ArrayList<>();
+    private volatile int missedCount;
+    private static final Object MISSED_BANNER = new Object();
     private final List<Contact> allContacts = new ArrayList<>();
     private final List<Object> shownContacts = new ArrayList<>();
     private final List<Object> recordings = new ArrayList<>();
@@ -379,6 +381,7 @@ public class MainActivity extends Activity {
                 final Set<Long> gone = new HashSet<>();
                 for (Db.Call c : recs) if (!Cleanup.hasAudio(MainActivity.this, c)) gone.add(c.id);
                 final List<Recent> rs = queryRecents(recs);
+                missedCount = MissedCalls.pending(MainActivity.this).size();
                 final List<Contact> cs = queryContacts();
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
@@ -398,6 +401,28 @@ public class MainActivity extends Activity {
 
     // ---------------------------------------------------------------- Recientes
 
+    /** Aviso fijo arriba de Recientes: llamadas perdidas sin devolver. */
+    private View missedBanner(View v) {
+        TextView t;
+        if (v instanceof TextView) t = (TextView) v;
+        else {
+            t = Ui.text(this, R.style.Text, "", 14.5f, true);
+            t.setTextColor(getColor(R.color.danger));
+            t.setBackgroundResource(R.drawable.bg_note);
+            t.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            t.setMinHeight(Ui.dp(this, 52));
+            t.setPadding(Ui.dp(this, 16), Ui.dp(this, 10), Ui.dp(this, 16), Ui.dp(this, 10));
+            t.setCompoundDrawablePadding(Ui.dp(this, 12));
+            Ui.icon(t, R.drawable.ic_call_small, R.color.danger, 20);
+            android.widget.AbsListView.LayoutParams lp = new android.widget.AbsListView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            t.setLayoutParams(lp);
+        }
+        int n = missedCount;
+        t.setText(n == 1 ? "1 número sin devolver · toca para ver" : n + " números sin devolver · toca para verlos");
+        return t;
+    }
+
     private void setupRecents() {
         ListView list = tabs[TAB_RECENTS].findViewById(R.id.list);
         recentsAdapter = new RecentsAdapter();
@@ -405,6 +430,7 @@ public class MainActivity extends Activity {
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override public void onItemClick(AdapterView<?> p, View v, int pos, long id) {
                 Object o = recents.get(pos);
+                if (o == MISSED_BANNER) { startActivity(new Intent(MainActivity.this, MissedCallsActivity.class)); return; }
                 if (!(o instanceof Recent)) return;
                 Recent r = (Recent) o;
                 if (r.recordingId >= 0) {
@@ -469,6 +495,7 @@ public class MainActivity extends Activity {
     private void fillRecents(List<Recent> rs) {
         recents.clear();
         long last = -1;
+        if (missedCount > 0) recents.add(MISSED_BANNER);
         for (Recent r : rs) {
             long k = Util.dayKey(r.date);
             if (k != last) { recents.add(Util.dayHeader(r.date)); last = k; }
@@ -482,13 +509,14 @@ public class MainActivity extends Activity {
         @Override public int getCount() { return recents.size(); }
         @Override public Object getItem(int i) { return recents.get(i); }
         @Override public long getItemId(int i) { return i; }
-        @Override public int getViewTypeCount() { return 2; }
-        @Override public int getItemViewType(int i) { return recents.get(i) instanceof String ? 0 : 1; }
-        @Override public boolean isEnabled(int i) { return getItemViewType(i) == 1; }
+        @Override public int getViewTypeCount() { return 3; }
+        @Override public int getItemViewType(int i) { Object o = recents.get(i); return o == MISSED_BANNER ? 2 : (o instanceof String ? 0 : 1); }
+        @Override public boolean isEnabled(int i) { return getItemViewType(i) != 0; }
 
         @Override
         public View getView(int i, View v, ViewGroup parent) {
             Object o = recents.get(i);
+            if (o == MISSED_BANNER) return missedBanner(v);
             if (o instanceof String) {
                 if (v == null) v = getLayoutInflater().inflate(R.layout.row_header, parent, false);
                 ((TextView) v).setText((String) o);
@@ -936,8 +964,9 @@ public class MainActivity extends Activity {
         android.content.ClipboardManager cm = getSystemService(android.content.ClipboardManager.class);
         if (cm != null && cm.hasPrimaryClip()) m.getMenu().add(0, 1, 0, "Pegar");
         if (digits.length() > 0) {
-            m.getMenu().add(0, 2, 1, "Copiar");
-            m.getMenu().add(0, 3, 2, "Borrar todo");
+            if (digits.length() >= 3) m.getMenu().add(0, 4, 1, "Programar llamada");
+            m.getMenu().add(0, 2, 2, "Copiar");
+            m.getMenu().add(0, 3, 3, "Borrar todo");
         }
         if (m.getMenu().size() == 0) {
             android.widget.Toast.makeText(this, "No hay nada copiado", android.widget.Toast.LENGTH_SHORT).show();
@@ -946,6 +975,10 @@ public class MainActivity extends Activity {
         m.setOnMenuItemClickListener(new android.widget.PopupMenu.OnMenuItemClickListener() {
             @Override public boolean onMenuItemClick(android.view.MenuItem it) {
                 if (it.getItemId() == 1) pasteNumber();
+                else if (it.getItemId() == 4) {
+                    String num = digits.toString();
+                    ScheduleCall.show(MainActivity.this, num, Util.contactName(MainActivity.this, num), null);
+                }
                 else if (it.getItemId() == 2) {
                     android.content.ClipboardManager c2 = getSystemService(android.content.ClipboardManager.class);
                     if (c2 != null) c2.setPrimaryClip(android.content.ClipData.newPlainText("Número", digits.toString()));

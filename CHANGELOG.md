@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.4.0] · 2026-11-23
+### Añadido
+- **Control de llamadas perdidas:** al perder una llamada llega un aviso con *Llamar*, *En 15 min* y *Más* (llamar, WhatsApp o historial). En Recientes aparece un aviso fijo con los números que te llamaron y aún no has devuelto, y una pantalla con todos (últimos 14 días) para llamar, escribir por WhatsApp, programar o descartar. Dejan de estar pendientes en cuanto hablas con esa persona. Se puede desactivar en Ajustes → Llamadas y spam.
+- **Programar una llamada desde el teclado:** escribe un número, mantén pulsado sobre él y elige *Programar llamada*.
+
 ## [5.3.0] · 2026-11-23
 ### Añadido
 - **Velocidad de reproducción:** un botón junto al reproductor de cada llamada cambia entre 1×, 1,5× y 2× sin alterar el tono de la voz. Se recuerda la última elegida.
