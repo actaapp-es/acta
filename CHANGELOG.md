@@ -2,34 +2,9 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
-## [5.7.0] · 2026-11-23
+## [5.4.1] · 2026-11-23
 ### Cambiado
-- **«Hola Acta» sin pitidos ni micrófono parpadeando.** La escucha continua ya no usa el reconocedor de voz de Android (que pita y se reinicia cada pocos segundos). Ahora mantiene un único flujo de micrófono, estable, y reconoce la frase en el propio móvil comparándola con **tu voz**.
-### Añadido
-- **Grabar mi voz** (Ajustes → Agente de voz): dices «Hola Acta» 5 veces y el móvil aprende a reconocerla, sin conexión. Hace falta antes de activar la escucha continua.
-- Cuando la frase encaja, un fragmento corto se envía a Groq para confirmar que de verdad dice «Hola Acta» antes de hacer nada (límite de 40 confirmaciones por hora). Si no lo confirma, no pasa nada.
-
-## [5.6.0] · 2026-11-23
-### Cambiado
-- **El micrófono ya no se queda escuchando de fondo por defecto.** La escucha continua de «Hola Acta» pasa a ser opcional y experimental (Ajustes → Agente de voz), porque con el reconocimiento de voz de Android el micrófono se abre y se cierra cada pocos segundos.
-### Añadido
-- **Hablar con Acta bajo demanda, sin escuchar de fondo:** mosaico «Hablar con Acta» en los ajustes rápidos y acceso directo al mantener pulsado el icono. Abre el micrófono solo un momento para una orden (llamar, guardar contacto o programar llamada) y lo cierra.
-
-## [5.5.2] · 2026-11-23
-### Corregido
-- **El micrófono ya no se abre y se cierra sin parar.** Los reinicios de la escucha podían encadenarse en ráfagas; ahora hay un único reinicio pendiente y un mínimo de espera entre uno y otro.
-### Añadido
-- **Escuchar solo con la pantalla encendida** (activado por defecto, en Ajustes → Agente de voz): con la pantalla apagada el micrófono queda libre y se gasta menos batería. Se puede desactivar para llamar con el móvil bloqueado.
-
-## [5.5.1] · 2026-11-23
-### Corregido
-- **«Hola Acta» ya no se activa solo.** Ahora solo vale la frase completa «Hola Acta» al principio de lo que se dice y con confianza suficiente del reconocedor (antes bastaba un fragmento parcial o una variante parecida). Si no se oye una orden después, no hace ruido ni da ningún aviso.
-
-## [5.5.0] · 2026-11-23
-### Añadido
-- **Agente de voz «Hola Acta»** (Ajustes → Agente de voz): sin abrir la app, di «Hola Acta» y pide *llama a…*, *guarda a… con el número…* o *avísame para llamar a… dentro de X horas*. La frase de activación se detecta en el propio móvil con el reconocimiento de voz del sistema; solo después de oírla se envía tu orden (audio o texto) a Groq, que entiende la intención y Acta la ejecuta. Responde en voz alta. Incluye *Probar ahora* y un botón *Hablar ahora* en el aviso fijo, para pedir algo sin decir la frase.
-- Necesita tu clave de Groq y los permisos de micrófono, contactos (leer y guardar) y teléfono. Mientras estás en una llamada se pausa.
-- Tras reiniciar el móvil, Android 14 o superior puede impedir que arranque solo: se reanuda al abrir Acta.
+- Se retira el agente de voz «Hola Acta» (versiones 5.5.0 a 5.7.0) y se vuelve al código de la 5.4.0, con control de llamadas perdidas, foto y fondo por contacto, velocidad de reproducción y widgets de contacto. Es una versión nueva (número de compilación mayor) para que se instale encima de las anteriores.
 
 ## [5.4.0] · 2026-11-23
 ### Añadido

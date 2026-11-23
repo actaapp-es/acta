@@ -8,7 +8,4 @@
     <string name="widget_contacts_desc">Pulsa un contacto para llamar, escribirle por WhatsApp o ver su historial.</string>
     <string name="widget_contact_single_name">Contacto de Acta (1×1)</string>
     <string name="widget_contact_single_desc">Un contacto: pulsa para llamar, escribirle por WhatsApp o ver su historial.</string>
-    <string name="shortcut_voice">Hablar con Acta</string>
-    <string name="shortcut_voice_long">Hablar con Acta: llamar, guardar contacto o programar llamada</string>
-    <string name="tile_voice">Hablar con Acta</string>
 </resources>

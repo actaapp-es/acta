@@ -26,7 +26,7 @@ import java.util.List;
 public class SettingsActivity extends Activity {
 
     private LinearLayout content;
-    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowVoice, rowVoiceEnroll, rowVoiceScreen, rowVoiceTry, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
+    private View rowPerms, rowDialer, rowLine, rowBattery, rowIncoming, rowOutgoing, rowStorage, rowExport, rowXDialer, rowXAuto, rowXAccess, rowXFolder, rowXScan, rowShzToggle, rowShzStatus, rowShzHelp, rowNvToggle, rowNvPair, rowNvStatus, rowHideId, rowMissedNotify, rowMissedList, rowSpam, rowAiKey, rowIsland, rowQuickMsg, rowExact, rowAiAuto, rowAiCtx, rowOwner, rowSplit, rowLock, rowCrypto;
     private boolean xiaomiMode;
 
     private LinearLayout group;
@@ -92,7 +92,6 @@ public class SettingsActivity extends Activity {
         buildPrivacySection();
         buildQuickSection();
         buildCallsSection();
-        buildVoiceSection();
         if (SimInfo.dual(this)) buildSimSection();
         buildAppearanceSection();
 
@@ -175,12 +174,6 @@ public class SettingsActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int rc, String[] p, int[] g) {
-        if (rc == 90) {
-            if (Util.has(this, android.Manifest.permission.RECORD_AUDIO)) VoiceService.setEnabled(this, true);
-            else Toast.makeText(this, "Sin permiso de micrófono el agente de voz no puede escuchar.", Toast.LENGTH_LONG).show();
-            refresh();
-            return;
-        }
         refresh();
         if (!Util.allGranted(this)) {
             boolean canAsk = false;
@@ -195,13 +188,6 @@ public class SettingsActivity extends Activity {
                 Util.allGranted(this));
         if (rowDialer != null) status(rowDialer, Util.isDefaultDialer(this) ? "Activa" : "Establecer", Util.isDefaultDialer(this));
         refreshNative();
-        if (rowVoice != null) toggle(rowVoice, VoiceService.enabled(this));
-        if (rowVoiceEnroll != null) {
-            TextView ev = rowVoiceEnroll.findViewById(R.id.value);
-            ev.setText(WakeWord.enrolled(this) ? "Grabada" : "Pendiente");
-            ev.setTextColor(getColor(WakeWord.enrolled(this) ? R.color.ok : R.color.accent));
-        }
-        if (rowVoiceScreen != null) toggle(rowVoiceScreen, VoiceService.screenOnly(this));
         refreshCalls();
         refreshQuick();
         refreshAi();
@@ -623,65 +609,6 @@ public class SettingsActivity extends Activity {
                         })
                         .setNegativeButton("Cancelar", null)
                         .show();
-            }
-        });
-    }
-
-    // ---------------------------------------------------------------- Agente de voz
-
-    private void buildVoiceSection() {
-        section("Agente de voz");
-        rowVoiceEnroll = row("Grabar mi voz para «Hola Acta»",
-                "Dices la frase 5 veces y el móvil aprende a reconocerla con tu voz, sin conexión y sin pitidos. Necesario para la escucha continua.",
-                new Click() { @Override void on() { startActivity(new Intent(SettingsActivity.this, WakeEnrollActivity.class)); } });
-        rowVoice = row("Escucha continua «Hola Acta»",
-                "Mantiene el micrófono abierto, de forma estable y sin pitidos, para oír «Hola Acta» con tu voz. Android muestra el indicador del micrófono y se gasta algo de batería. "
-                        + "La frase se detecta en el móvil; solo cuando encaja, un fragmento corto se envía a Groq para confirmarla antes de hacer nada. Sin escucha continua puedes usar el mosaico «Hablar con Acta» de ajustes rápidos.",
-                new Click() {
-                    @Override void on() {
-                        if (VoiceService.enabled(SettingsActivity.this)) {
-                            VoiceService.setEnabled(SettingsActivity.this, false);
-                            refresh();
-                            return;
-                        }
-                        if (!Summarizer.hasKey(SettingsActivity.this)) {
-                            Toast.makeText(SettingsActivity.this, "Primero añade tu clave de Groq en Ajustes.", Toast.LENGTH_LONG).show();
-                            return;
-                        }
-                        if (!WakeWord.enrolled(SettingsActivity.this)) {
-                            Toast.makeText(SettingsActivity.this, "Primero graba tu voz diciendo «Hola Acta».", Toast.LENGTH_LONG).show();
-                            startActivity(new Intent(SettingsActivity.this, WakeEnrollActivity.class));
-                            return;
-                        }
-                        java.util.List<String> need = new java.util.ArrayList<>();
-                        for (String perm : new String[]{android.Manifest.permission.RECORD_AUDIO, android.Manifest.permission.READ_CONTACTS,
-                                android.Manifest.permission.WRITE_CONTACTS, android.Manifest.permission.CALL_PHONE})
-                            if (!Util.has(SettingsActivity.this, perm)) need.add(perm);
-                        if (android.os.Build.VERSION.SDK_INT >= 33 && !Util.has(SettingsActivity.this, android.Manifest.permission.POST_NOTIFICATIONS))
-                            need.add(android.Manifest.permission.POST_NOTIFICATIONS);
-                        if (!need.isEmpty()) { requestPermissions(need.toArray(new String[0]), 90); return; }
-                        VoiceService.setEnabled(SettingsActivity.this, true);
-                        refresh();
-                    }
-                });
-        rowVoiceScreen = row("Escuchar solo con la pantalla encendida",
-                "Recomendado: con la pantalla apagada el micrófono queda libre y se gasta menos batería. Desactívalo si quieres llamar con el móvil bloqueado.",
-                new Click() {
-                    @Override void on() {
-                        Util.prefs(SettingsActivity.this).edit().putBoolean("voice_screen_only", !VoiceService.screenOnly(SettingsActivity.this)).apply();
-                        if (VoiceService.enabled(SettingsActivity.this)) VoiceService.start(SettingsActivity.this);
-                        refresh();
-                    }
-                });
-        rowVoiceTry = row("Probar ahora", "Habla sin decir «Hola Acta»: pulsa y pide algo.", new Click() {
-            @Override void on() {
-                if (!Summarizer.hasKey(SettingsActivity.this)) {
-                    Toast.makeText(SettingsActivity.this, "Primero añade tu clave de Groq en Ajustes.", Toast.LENGTH_LONG).show();
-                } else if (!Util.has(SettingsActivity.this, android.Manifest.permission.RECORD_AUDIO)) {
-                    requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, 91);
-                } else {
-                    VoiceService.listenNow(SettingsActivity.this);
-                }
             }
         });
     }
