@@ -58,7 +58,7 @@ public class VoiceService extends Service {
     private TextToSpeech tts;
     private boolean ttsReady;
     private volatile boolean busy;      // procesando una orden
-    private boolean stopped, listening;
+    private boolean stopped, listening, once;
     private final Runnable restart = new Runnable() { @Override public void run() { startWake(); } };
     private android.content.BroadcastReceiver screenRx;
 
@@ -72,10 +72,10 @@ public class VoiceService extends Service {
     private int errors;
     private final java.util.Map<String, Runnable> speakDone = new java.util.HashMap<>();
 
-    static boolean enabled(Context c) { return Util.prefs(c).getBoolean("voice_on", false); }
+    static boolean enabled(Context c) { return Util.prefs(c).getBoolean("voice_wake", false); }
 
     static void setEnabled(Context c, boolean on) {
-        Util.prefs(c).edit().putBoolean("voice_on", on).apply();
+        Util.prefs(c).edit().putBoolean("voice_wake", on).apply();
         if (on) start(c); else c.stopService(new Intent(c, VoiceService.class));
     }
 
@@ -130,7 +130,7 @@ public class VoiceService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
-            Util.prefs(this).edit().putBoolean("voice_on", false).apply();
+            Util.prefs(this).edit().putBoolean("voice_wake", false).apply();
             stopped = true;
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf();
@@ -138,7 +138,10 @@ public class VoiceService extends Service {
         }
         if (!startFg("Di «Hola Acta» y pide algo: llamar, guardar un contacto o programar una llamada.")) { stopSelf(); return START_NOT_STICKY; }
         if (!Util.has(this, android.Manifest.permission.RECORD_AUDIO)) { stopSelf(); return START_NOT_STICKY; }
-        if (intent != null && ACTION_LISTEN.equals(intent.getAction())) {
+        boolean listen = intent != null && ACTION_LISTEN.equals(intent.getAction());
+        if (listen) once = !enabled(this);
+        if (!listen && !enabled(this)) { stopSelf(); return START_NOT_STICKY; } // sin escucha continua: solo bajo demanda
+        if (listen) {
             main.post(new Runnable() { @Override public void run() { if (!busy) { destroyRec(); beepAndCapture(true); } } });
         } else if (rec == null && !busy) {
             main.post(new Runnable() { @Override public void run() { startWake(); } });
@@ -350,7 +353,10 @@ public class VoiceService extends Service {
                 if (reply != null) Toast.makeText(VoiceService.this, reply, Toast.LENGTH_LONG).show();
                 startFg("Di «Hola Acta» y pide algo: llamar, guardar un contacto o programar una llamada.");
                 final String id = "r" + System.currentTimeMillis();
-                Runnable done = new Runnable() { @Override public void run() { busy = false; retryLater(400); } };
+                Runnable done = new Runnable() { @Override public void run() {
+                    busy = false;
+                    if (once && !enabled(VoiceService.this)) { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); } else retryLater(400);
+                } };
                 if (reply == null || !ttsReady || inCall()) { done.run(); return; }
                 speakDone.put(id, done);
                 Bundle p = new Bundle();

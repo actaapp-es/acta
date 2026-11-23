@@ -2,6 +2,12 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.6.0] · 2026-11-23
+### Cambiado
+- **El micrófono ya no se queda escuchando de fondo por defecto.** La escucha continua de «Hola Acta» pasa a ser opcional y experimental (Ajustes → Agente de voz), porque con el reconocimiento de voz de Android el micrófono se abre y se cierra cada pocos segundos.
+### Añadido
+- **Hablar con Acta bajo demanda, sin escuchar de fondo:** mosaico «Hablar con Acta» en los ajustes rápidos y acceso directo al mantener pulsado el icono. Abre el micrófono solo un momento para una orden (llamar, guardar contacto o programar llamada) y lo cierra.
+
 ## [5.5.2] · 2026-11-23
 ### Corregido
 - **El micrófono ya no se abre y se cierra sin parar.** Los reinicios de la escucha podían encadenarse en ráfagas; ahora hay un único reinicio pendiente y un mínimo de espera entre uno y otro.

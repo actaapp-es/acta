@@ -626,9 +626,9 @@ public class SettingsActivity extends Activity {
 
     private void buildVoiceSection() {
         section("Agente de voz");
-        rowVoice = row("Hola Acta",
-                "Di «Hola Acta» sin abrir la app y pide: llamar a un contacto, guardar un contacto o programar una llamada dentro de unas horas. "
-                        + "La frase de activación se detecta en el móvil; solo después de oírla se envía tu orden a Groq. Muestra un aviso fijo y gasta algo de batería.",
+        rowVoice = row("Escucha continua «Hola Acta» (experimental)",
+                "Mantiene el micrófono abierto para oír «Hola Acta». Android muestra el indicador del micrófono y puede abrirlo y cerrarlo de vez en cuando; gasta batería. "
+                        + "La frase se detecta en el móvil; solo después se envía tu orden a Groq. Si prefieres no tener el micrófono activo, usa el mosaico «Hablar con Acta» de ajustes rápidos o el acceso directo del icono.",
                 new Click() {
                     @Override void on() {
                         if (VoiceService.enabled(SettingsActivity.this)) {
