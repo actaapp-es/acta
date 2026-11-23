@@ -203,6 +203,26 @@ final class Ui {
         return c.getColor(slot == 0 ? R.color.ink_2 : AV[slot - 1][1]);
     }
 
+    /** Como avatar(), pero usa la foto de perfil que la persona haya puesto a ese número. */
+    static void avatar(TextView av, ImageView icon, String name, String number) {
+        Context c = av.getContext();
+        android.graphics.Bitmap bmp = ContactMedia.get(c, number, true);
+        if (bmp != null) {
+            av.setBackground(new android.graphics.drawable.BitmapDrawable(c.getResources(), bmp));
+            av.setBackgroundTintList(null);
+            av.setClipToOutline(true);
+            av.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                @Override public void getOutline(View v, android.graphics.Outline o) { o.setOval(0, 0, v.getWidth(), v.getHeight()); }
+            });
+            av.setText("");
+            if (icon != null) icon.setVisibility(View.GONE);
+            return;
+        }
+        av.setBackgroundResource(R.drawable.bg_avatar);
+        av.setClipToOutline(false);
+        avatar(av, icon, name);
+    }
+
     /** Pinta un avatar redondo: iniciales con color estable según el nombre, o icono de persona. */
     static void avatar(TextView av, ImageView icon, String name) {
         Context c = av.getContext();

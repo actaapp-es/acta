@@ -39,6 +39,23 @@ public class DetailActivity extends Activity {
     };
     private File file;
     private MediaPlayer player;
+    private static final float[] SPEEDS = {1f, 1.5f, 2f};
+    private int speedIdx;
+    private TextView speedBtn;
+
+    private void showSpeed() {
+        float v = SPEEDS[speedIdx];
+        String t = v == 1f ? "1×" : (v == 1.5f ? "1,5×" : "2×");
+        speedBtn.setText(t);
+        speedBtn.setContentDescription("Velocidad de reproducción: " + t + ". Toca para cambiarla.");
+    }
+
+    /** Cambia la velocidad sin alterar el tono de la voz. Solo con el audio sonando. */
+    private void applySpeed() {
+        try {
+            player.setPlaybackParams(new android.media.PlaybackParams().setSpeed(SPEEDS[speedIdx]).setPitch(1f));
+        } catch (Throwable ignored) { }
+    }
     private ImageButton play;
     private SeekBar seek;
     private TextView pos, len;
@@ -80,7 +97,7 @@ public class DetailActivity extends Activity {
 
         String formatted = TextUtils.isEmpty(call.number) ? "Número oculto" : Util.number(this, call.number);
         boolean named = !TextUtils.isEmpty(call.name);
-        Ui.avatar((TextView) findViewById(R.id.avatar), (android.widget.ImageView) findViewById(R.id.avatar_icon), named ? call.name : null);
+        Ui.avatar((TextView) findViewById(R.id.avatar), (android.widget.ImageView) findViewById(R.id.avatar_icon), named ? call.name : null, call.number);
         ((TextView) findViewById(R.id.number)).setText(named ? call.name : formatted);
         TextView name = findViewById(R.id.name);
         if (!named) name.setVisibility(View.GONE);
@@ -135,6 +152,17 @@ public class DetailActivity extends Activity {
         len = findViewById(R.id.len);
         len.setText(Util.clock(call.recordedSec));
 
+        speedBtn = findViewById(R.id.btn_speed);
+        speedIdx = Math.max(0, Math.min(SPEEDS.length - 1, Util.prefs(this).getInt("play_speed", 0)));
+        showSpeed();
+        speedBtn.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                speedIdx = (speedIdx + 1) % SPEEDS.length;
+                Util.prefs(DetailActivity.this).edit().putInt("play_speed", speedIdx).apply();
+                showSpeed();
+                if (player != null && player.isPlaying()) applySpeed();
+            }
+        });
         play.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { toggle(); }
         });
@@ -1094,6 +1122,7 @@ public class DetailActivity extends Activity {
             play.setContentDescription("Reproducir");
         } else {
             player.start();
+            applySpeed();
             play.setImageResource(R.drawable.ic_pause);
             play.setContentDescription("Pausar");
         }

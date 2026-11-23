@@ -514,7 +514,7 @@ public class MainActivity extends Activity {
             t.setTextColor(getColor(missed ? R.color.danger : R.color.ink));
 
             Contact ct = named ? findContact(r.number) : null;
-            avatarFor(v, named ? r.name : null, ct != null ? ct.photo : null);
+            avatarFor(v, named ? r.name : null, ct != null ? ct.photo : null, r.number);
 
             String kind = missed ? (r.type == CallLog.Calls.REJECTED_TYPE ? "Rechazada" : "Perdida")
                     : out ? "Saliente" : "Entrante";
@@ -545,14 +545,17 @@ public class MainActivity extends Activity {
     }
 
     /** Avatar de una fila: foto del contacto, iniciales de color o icono de persona. */
-    private void avatarFor(View row, String name, String photoUri) {
+    private void avatarFor(View row, String name, String photoUri, String number) {
         TextView av = row.findViewById(R.id.avatar);
         ImageView icon = row.findViewById(R.id.avatar_icon);
         ImageView photo = row.findViewById(R.id.photo);
-        Ui.avatar(av, icon, name);
+        Ui.avatar(av, icon, name, number);
         if (photo == null) return;
         photo.setClipToOutline(true);
-        if (photoUri != null) {
+        if (ContactMedia.has(this, number, true)) {
+            photo.setImageDrawable(null);
+            photo.setVisibility(View.GONE);
+        } else if (photoUri != null) {
             try { photo.setImageURI(Uri.parse(photoUri)); photo.setVisibility(View.VISIBLE); }
             catch (Exception e) { photo.setVisibility(View.GONE); }
         } else {
@@ -693,7 +696,7 @@ public class MainActivity extends Activity {
             v.findViewById(R.id.card).setBackground(Ui.groupBg(MainActivity.this, first, last));
             v.findViewById(R.id.sep).setVisibility(last ? View.GONE : View.VISIBLE);
             String n = TextUtils.isEmpty(c.name) ? Util.number(MainActivity.this, c.number()) : c.name;
-            avatarFor(v, TextUtils.isEmpty(c.name) ? null : c.name, c.photo);
+            avatarFor(v, TextUtils.isEmpty(c.name) ? null : c.name, c.photo, c.number());
             ((TextView) v.findViewById(R.id.title)).setText(n);
             String[] firstNum = c.numbers.get(0);
             String sub = Util.number(MainActivity.this, firstNum[0]);
@@ -1292,7 +1295,7 @@ public class MainActivity extends Activity {
                 avIcon.setVisibility(View.VISIBLE);
             } else {
                 avIcon.setImageResource(R.drawable.ic_tab_contacts);
-                Ui.avatar(av, avIcon, named ? c.name : null);
+                Ui.avatar(av, avIcon, named ? c.name : null, c.number);
             }
             v.findViewById(R.id.fav).setVisibility(c.fav ? View.VISIBLE : View.GONE);
             ImageView dir = v.findViewById(R.id.dir);

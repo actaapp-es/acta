@@ -130,7 +130,11 @@ public class PersonActivity extends Activity {
         avf.addView(av, new FrameLayout.LayoutParams(dp(76), dp(76)));
         ImageView avIcon = Ui.iconView(this, R.drawable.ic_tab_contacts, R.color.ink_2, 34);
         avf.addView(avIcon, new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.CENTER));
-        Ui.avatar(av, avIcon, named ? name : null);
+        Ui.avatar(av, avIcon, named ? name : null, number);
+        avf.setContentDescription("Foto de perfil. Toca para cambiarla.");
+        avf.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { choose(true); }
+        });
         hero.addView(avf, new LinearLayout.LayoutParams(dp(76), dp(76)));
         TextView n = Ui.text(this, R.style.Text, named ? name : formatted, 25, true);
         n.setLetterSpacing(-0.02f);
@@ -176,6 +180,15 @@ public class PersonActivity extends Activity {
             }
         }), weight(true));
         content.addView(actions);
+
+        // Personalizar: foto de perfil y fondo de la pantalla de llamada
+        LinearLayout look = Ui.card(this);
+        look.addView(lookRow(R.drawable.ic_person, "Foto de perfil", ContactMedia.has(this, number, true) ? "Cambiar o quitar" : "Elegir una imagen", true));
+        look.addView(Ui.separator(this, 18));
+        look.addView(lookRow(R.drawable.ic_call_small, "Fondo de la pantalla de llamada", ContactMedia.has(this, number, false) ? "Cambiar o quitar" : "Elegir una imagen", false));
+        LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        ll.topMargin = dp(12);
+        content.addView(look, ll);
 
         // Llamadas programadas con esta persona
         for (final QuickActions.Reminder rem : QuickActions.pending(this)) {
@@ -421,5 +434,68 @@ public class PersonActivity extends Activity {
 
     private void openCall(long id) {
         startActivity(new Intent(this, DetailActivity.class).putExtra("id", id));
+    }
+
+    private static final int REQ_PHOTO = 71, REQ_BG = 72;
+
+    private View lookRow(int icon, String title, String sub, final boolean photo) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(60));
+        row.setPadding(dp(16), dp(8), dp(12), dp(8));
+        row.setBackgroundResource(R.drawable.bg_card_click);
+        row.addView(Ui.iconView(this, icon, R.color.accent, 22));
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.addView(Ui.text(this, R.style.Text, title, 15, true));
+        TextView t2 = Ui.text(this, R.style.Text_Meta, sub);
+        t2.setTextSize(13);
+        col.addView(t2);
+        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        cl.setMarginStart(dp(16));
+        row.addView(col, cl);
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { choose(photo); }
+        });
+        return row;
+    }
+
+    private void choose(final boolean photo) {
+        final boolean has = ContactMedia.has(this, number, photo);
+        String[] items = has ? new String[]{"Elegir otra imagen", "Quitar"} : new String[]{"Elegir una imagen"};
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(photo ? "Foto de perfil" : "Fondo de la pantalla de llamada")
+                .setItems(items, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int which) {
+                        if (which == 0) {
+                            Intent i = new Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE);
+                            try { startActivityForResult(Intent.createChooser(i, "Elegir imagen"), photo ? REQ_PHOTO : REQ_BG); }
+                            catch (Exception e) { Toast.makeText(PersonActivity.this, "No hay ninguna app para elegir imágenes", Toast.LENGTH_LONG).show(); }
+                        } else {
+                            ContactMedia.remove(PersonActivity.this, number, photo);
+                            load();
+                        }
+                    }
+                }).show();
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, final Intent data) {
+        super.onActivityResult(req, res, data);
+        if ((req != REQ_PHOTO && req != REQ_BG) || res != RESULT_OK || data == null || data.getData() == null) return;
+        final boolean photo = req == REQ_PHOTO;
+        final android.net.Uri uri = data.getData();
+        new Thread(new Runnable() {
+            @Override public void run() {
+                final boolean ok = ContactMedia.save(PersonActivity.this, uri, number, photo);
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        if (!ok) Toast.makeText(PersonActivity.this, "No se pudo usar esa imagen", Toast.LENGTH_LONG).show();
+                        load();
+                    }
+                });
+            }
+        }).start();
     }
 }

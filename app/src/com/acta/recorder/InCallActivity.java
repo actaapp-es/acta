@@ -252,7 +252,8 @@ public class InCallActivity extends Activity implements CallManager.Listener {
         String ak = name + "|" + number;
         if (!ak.equals(avatarKey)) {
             avatarKey = ak;
-            Ui.avatar((TextView) findViewById(R.id.avatar), (android.widget.ImageView) findViewById(R.id.avatar_icon), name);
+            Ui.avatar((TextView) findViewById(R.id.avatar), (android.widget.ImageView) findViewById(R.id.avatar_icon), name, number);
+            applyCallBackground(number);
         }
 
         switch (s) {
@@ -388,5 +389,19 @@ public class InCallActivity extends Activity implements CallManager.Listener {
             blinkAnim.cancel();
             blinkAnim = null;
         }
+    }
+
+    /** Fondo que la persona eligió para este contacto, con un velo para que el texto se lea. */
+    private void applyCallBackground(String number) {
+        android.widget.ImageView img = findViewById(R.id.bg_img);
+        View scrim = findViewById(R.id.bg_scrim);
+        android.graphics.Bitmap bmp = ContactMedia.get(this, number, false);
+        if (bmp == null) { img.setImageDrawable(null); img.setVisibility(View.GONE); scrim.setVisibility(View.GONE); return; }
+        boolean night = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        scrim.setBackgroundColor(night ? 0xB3000000 : 0xB8FFFFFF);
+        img.setImageBitmap(bmp);
+        img.setVisibility(View.VISIBLE);
+        scrim.setVisibility(View.VISIBLE);
     }
 }
