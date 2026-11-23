@@ -2,6 +2,10 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
+## [5.5.1] · 2026-11-23
+### Corregido
+- **«Hola Acta» ya no se activa solo.** Ahora solo vale la frase completa «Hola Acta» al principio de lo que se dice y con confianza suficiente del reconocedor (antes bastaba un fragmento parcial o una variante parecida). Si no se oye una orden después, no hace ruido ni da ningún aviso.
+
 ## [5.5.0] · 2026-11-23
 ### Añadido
 - **Agente de voz «Hola Acta»** (Ajustes → Agente de voz): sin abrir la app, di «Hola Acta» y pide *llama a…*, *guarda a… con el número…* o *avísame para llamar a… dentro de X horas*. La frase de activación se detecta en el propio móvil con el reconocimiento de voz del sistema; solo después de oírla se envía tu orden (audio o texto) a Groq, que entiende la intención y Acta la ejecuta. Responde en voz alta. Incluye *Probar ahora* y un botón *Hablar ahora* en el aviso fijo, para pedir algo sin decir la frase.

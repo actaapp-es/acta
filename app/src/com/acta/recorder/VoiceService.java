@@ -46,8 +46,10 @@ public class VoiceService extends Service {
 
     /** «Hola Acta» y las formas en que suele transcribirlo el reconocedor. */
     private static final Pattern WAKE = Pattern.compile(
-            "\\b(?:h?ola|hey|oye|ey)\\s*(?:h?acta|a\\s?k?ta|ackta|hakta|h?atta|a\\s?cta|h?acto)\\b[\\s,.:;!¡¿?]*(.*)$",
+            "^[\\s¡¿\"“«]*(?:h?ola)[\\s,.:;!]+h?acta\\b[\\s,.:;!¡¿?\"”»]*(.*)$",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    /** Confianza mínima del reconocedor (0-1) para dar por buena la frase de activación, si la informa. */
+    private static final float MIN_CONFIDENCE = 0.55f;
 
     static volatile boolean running;
 
@@ -56,7 +58,7 @@ public class VoiceService extends Service {
     private TextToSpeech tts;
     private boolean ttsReady;
     private volatile boolean busy;      // procesando una orden
-    private boolean wakeSeen, stopped;
+    private boolean stopped;
     private int errors;
     private final java.util.Map<String, Runnable> speakDone = new java.util.HashMap<>();
 
@@ -115,7 +117,7 @@ public class VoiceService extends Service {
         if (!startFg("Di «Hola Acta» y pide algo: llamar, guardar un contacto o programar una llamada.")) { stopSelf(); return START_NOT_STICKY; }
         if (!Util.has(this, android.Manifest.permission.RECORD_AUDIO)) { stopSelf(); return START_NOT_STICKY; }
         if (intent != null && ACTION_LISTEN.equals(intent.getAction())) {
-            main.post(new Runnable() { @Override public void run() { if (!busy) { destroyRec(); beepAndCapture(); } } });
+            main.post(new Runnable() { @Override public void run() { if (!busy) { destroyRec(); beepAndCapture(true); } } });
         } else if (rec == null && !busy) {
             main.post(new Runnable() { @Override public void run() { startWake(); } });
         }
@@ -186,7 +188,6 @@ public class VoiceService extends Service {
                 }
                 rec.setRecognitionListener(listener);
             }
-            wakeSeen = false;
             Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                     .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES")
@@ -222,32 +223,24 @@ public class VoiceService extends Service {
         @Override public void onEndOfSpeech() { }
         @Override public void onEvent(int t, Bundle b) { }
 
-        @Override
-        public void onPartialResults(Bundle b) {
-            if (wakeSeen || busy) return;
-            String t = best(b);
-            if (t != null && WAKE.matcher(t).find()) {
-                wakeSeen = true;
-                beep(ToneGenerator.TONE_PROP_ACK);
-            }
-        }
+        @Override public void onPartialResults(Bundle b) { }
 
         @Override
         public void onResults(Bundle b) {
             if (busy) return;
-            String found = null;
+            // Solo vale la frase COMPLETA, al principio de lo que se dijo, y solo la mejor transcripción.
             ArrayList<String> all = b == null ? null : b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-            if (all != null) for (String s : all) { if (WAKE.matcher(s).find()) { found = s; break; } }
-            if (found == null) { if (wakeSeen) onWakeWord(""); else retryLater(250); return; }
-            Matcher m = WAKE.matcher(found);
-            String rest = m.find() ? m.group(1).trim() : "";
-            onWakeWord(rest);
+            if (all == null || all.isEmpty()) { retryLater(250); return; }
+            Matcher m = WAKE.matcher(all.get(0).trim());
+            if (!m.find()) { retryLater(250); return; }
+            float[] conf = b.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES);
+            if (conf != null && conf.length > 0 && conf[0] >= 0 && conf[0] < MIN_CONFIDENCE) { retryLater(250); return; }
+            onWakeWord(m.group(1).trim());
         }
 
         @Override
         public void onError(int code) {
             if (busy) return;
-            if (wakeSeen) { onWakeWord(""); return; }
             if (code == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { stopSelf(); return; }
             // Silencio o sin coincidencia: lo normal. Otros errores: recrea el reconocedor con espera creciente.
             if (code == SpeechRecognizer.ERROR_NO_MATCH || code == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) { retryLater(200); return; }
@@ -269,16 +262,15 @@ public class VoiceService extends Service {
         if (busy) return;
         busy = true;
         destroyRec();
-        wakeSeen = false;
         if (rest.trim().split("\\s+").length >= 2 && !rest.trim().isEmpty()) {
             final String said = rest.trim();
-            work(said, null);
+            work(said, null, false);
         } else {
-            beepAndCapture();
+            beepAndCapture(false);
         }
     }
 
-    private void beepAndCapture() {
+    private void beepAndCapture(final boolean manual) {
         busy = true;
         beep(ToneGenerator.TONE_PROP_BEEP);
         startFg("Te escucho…");
@@ -286,45 +278,51 @@ public class VoiceService extends Service {
             @Override public void run() {
                 try { Thread.sleep(450); } catch (InterruptedException ignored) { }
                 File wav = recordCommand();
-                work(null, wav);
+                work(null, wav, manual);
             }
         }).start();
     }
 
     /** Procesa fuera del hilo principal: transcribe (si hay audio), pregunta a Groq, ejecuta y responde en voz alta. */
-    private void work(final String said, final File wav) {
+    private void work(final String said, final File wav, final boolean manual) {
         new Thread(new Runnable() {
             @Override public void run() {
                 String reply;
                 try {
                     String text = said;
                     if (text == null) {
-                        if (wav == null) { reply = "No te he oído."; speakThenResume(reply); return; }
+                        if (wav == null) { speakThenResume(manual ? "No te he oído." : null); return; }
                         startFg("Entendiendo lo que has dicho…");
                         text = VoiceAgent.transcribe(VoiceService.this, wav);
                         //noinspection ResultOfMethodCallIgnored
                         wav.delete();
                     }
-                    if (text == null || text.trim().length() < 3) reply = "No te he entendido.";
+                    if (text == null || text.trim().length() < 3) reply = manual ? "No te he entendido." : null;
                     else reply = VoiceAgent.run(VoiceService.this, text.trim());
                 } catch (Summarizer.RateLimit rl) {
                     reply = "Groq ha llegado a su límite. Prueba en un momento.";
                 } catch (Exception e) {
                     reply = "No he podido entenderte. Revisa tu conexión y tu clave de Groq.";
                 }
+                if (!manual && reply != null && reply.startsWith("No he podido")) { quiet(reply); reply = null; }
                 speakThenResume(reply);
             }
         }).start();
     }
 
+    /** Avisa sin hablar (para no molestar si la activación fue un falso positivo). */
+    private void quiet(final String msg) {
+        main.post(new Runnable() { @Override public void run() { Toast.makeText(VoiceService.this, msg, Toast.LENGTH_LONG).show(); } });
+    }
+
     private void speakThenResume(final String reply) {
         main.post(new Runnable() {
             @Override public void run() {
-                Toast.makeText(VoiceService.this, reply, Toast.LENGTH_LONG).show();
+                if (reply != null) Toast.makeText(VoiceService.this, reply, Toast.LENGTH_LONG).show();
                 startFg("Di «Hola Acta» y pide algo: llamar, guardar un contacto o programar una llamada.");
                 final String id = "r" + System.currentTimeMillis();
                 Runnable done = new Runnable() { @Override public void run() { busy = false; retryLater(400); } };
-                if (!ttsReady || inCall()) { done.run(); return; }
+                if (reply == null || !ttsReady || inCall()) { done.run(); return; }
                 speakDone.put(id, done);
                 Bundle p = new Bundle();
                 if (tts.speak(reply, TextToSpeech.QUEUE_FLUSH, p, id) != TextToSpeech.SUCCESS) { speakDone.remove(id); done.run(); return; }
